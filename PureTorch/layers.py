@@ -59,13 +59,11 @@ class Linear():
 class Sequential():
     def __init__(self,
                  layers: list,
-                 lr: float = 1e-3,
                  name: str = "Sequential model"):
         """
         Initializes the layers of the model
         """
         self.layers = layers
-        self.lr = lr
         self.name = name
         
     def forward(self, x):
@@ -87,8 +85,9 @@ class Sequential():
         for layer in reversed(self.layers):
             grad = layer.backward(grad)
 
-    def update_params(self):
+    def update_params(self, lr):
         ### Update weights and biases using gradient descent
+        self.lr = lr
         for layer in self.layers:
             if isinstance(layer, Linear):
                 layer.weights = layer.weights - (self.lr * layer.weights_grad)
@@ -107,6 +106,7 @@ class Sequential():
               loss_fn,
               epochs: int,
               lr: float = 1e-3,
+              batch_size: int = 32,
               print_freq: int = 1,
               track_acc: bool = False):
         """
@@ -141,6 +141,7 @@ class Sequential():
             # Here the model_train_results will contain the model's train and testing metrics as a Python dict.
         """
         import numpy as np
+        self.batch_size = batch_size
         for epoch in range(epochs):
             permutation = np.random.permutation(len(X_train))
             X_train_shuffled = X_train[permutation]
@@ -158,8 +159,8 @@ class Sequential():
                 #print(loss_grad.shape)
             
                 self.backward(loss_grad)
-                self.update_params()
-            if (epoch+1) % 1 == 0:
+                self.update_params(lr = lr)
+            if (epoch+1) % print_freq == 0:
                 print(f"Epoch: {epoch + 1} | Loss: {loss:.4f} | Acc: {self.__accuracy_fn(np.argmax(y_pred, axis = 1), y_batch)}")
         for epoch in range(epochs):
 
