@@ -8,8 +8,8 @@
 ****
 
 # Version info
-**Current version** - 0.1.0\
-**Features** - raw torch-like code for implementing Neural nets using NumPy
+**Current version** - 0.1.1\
+**New features** - added the training loop inside Sequential, you can train by using Sequential.train()
 
 *Runs on CPU only. Might add GPU support later.*
 ****
@@ -41,6 +41,7 @@ To check the "development code" check the "dev" branch (will add it soon)
 # Issues
 <u>Known issues:</u>
 - Training only works if (data_size % batch_size) == 0, else the code breaks
+    - Bug fixed (in version 0.1.1)
 ****
 
 # Setup
