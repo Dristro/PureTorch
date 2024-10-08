@@ -40,7 +40,7 @@ To check the "development code" check the "dev" branch (will add it soon)
 
 # Issues
 <u>Known issues:</u>
-- Training only works with batch_size = 32 (anything else does break the code)
+- Training only works if (data_size % batch_size) == 0, else the code breaks
 ****
 
 # Setup
