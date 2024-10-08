@@ -145,14 +145,14 @@ class Sequential():
 
         results = {"train_loss": [],
                    "train_acc": [],
-                   "test_acc:": []} if track_acc else {"train_loss": []}
+                   "test_acc": []} if track_acc else {"train_loss": []}
         
         for epoch in range(epochs):
             permutation = np.random.permutation(len(X_train))
             X_train_shuffled = X_train[permutation]
             y_train_shuffled = y_train[permutation]
             for i in range(0, len(X_train), self.batch_size):
-                X_batch = X_train_shuffled[i:i+self.batch_size].reshape(self.batch_size, 28*28)
+                X_batch = X_train_shuffled[i:i+self.batch_size].reshape(-1, 28*28)
                 y_batch = y_train_shuffled[i:i+self.batch_size].flatten()
                 
                 y_pred = self.forward(X_batch)                
@@ -163,7 +163,7 @@ class Sequential():
                 self.update_params(lr = lr)
             if track_acc:
                 y_preds = []
-                for sample, img in enumerate(X_test):
+                for img in X_test:
                     img = img.reshape(1, -1)
                     pred = self.forward(img)
                     pred = pred.argmax(axis = 1)
