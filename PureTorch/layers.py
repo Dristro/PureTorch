@@ -17,9 +17,12 @@ class Linear():
         """
         Performs a forward pass on the linear layer,
         and returns the output of the layer.
+
+        Expected to have batch-dim first.
         """
         #print(f"Linear layer input shape: {x.shape}")
         self.input = x
+        self.batch_size = x.shape[0]
         x = x @ self.weights.T
         #print(f"Linear layer output shape: {x.shape}")
         if self.bias is not None:
@@ -91,6 +94,76 @@ class Sequential():
                 layer.weights = layer.weights - (self.lr * layer.weights_grad)
                 if layer.bias is not None:
                     layer.bias = layer.bias - (self.lr * layer.bias_grad)
+
+    def __accuracy_fn(self, y_pred, y_true):
+        import numpy as np
+        return np.sum(y_pred == y_true) / len(y_pred)
+
+    def train(self,
+              X_train,
+              y_train,
+              X_test,
+              y_test,
+              loss_fn,
+              epochs: int,
+              lr: float = 1e-3,
+              print_freq: int = 1,
+              track_acc: bool = False):
+        """
+        Trains the model for "epochs" and returns the losses of the model
+
+        Args:
+            X_train - training feature matrix
+            y_train - training label vector
+            X_test - testing feature matrix
+            y_test - testing label vector
+            loss_fn - loss function (from PureTorch.loss.X)
+            epochs - number of epochs to train
+            lr - learning rate (aka step_size)
+            print_freq - how frequently the train/test losses and/or accuracy is printed
+            track_acc - track the accuracy of the model's predictions (for classification)
+        
+        Returns:
+            A Python dict with the training and testing losses and accuracies (if train_acc = True) of the model per epoch.
+        
+        Example usage:
+            model = Sequential([
+                Linear(10, 5),
+                ReLU(),
+                Linear(5, 2),
+                Softmax()
+            ], name = "example model")
+
+            model_train_results = model.train(X_train = X_train, y_train = y_train,
+                                              X_test = X_test, y_test = y_test,
+                                              epochs = 5, lr = 1e-3, print_freq = 1, track_acc = True)
+            
+            # Here the model_train_results will contain the model's train and testing metrics as a Python dict.
+        """
+        import numpy as np
+        for epoch in range(epochs):
+            permutation = np.random.permutation(len(X_train))
+            X_train_shuffled = X_train[permutation]
+            y_train_shuffled = y_train[permutation]
+            for i in range(0, len(X_train), self.batch_size):
+                X_batch = X_train_shuffled[i:i+self.batch_size].reshape(self.batch_size, 28*28)
+                y_batch = y_train_shuffled[i:i+self.batch_size].flatten()
+            
+                y_pred = self.forward(X_batch)
+                #print(y_pred.shape)
+                #print(y_batch.shape)
+                
+                loss = loss_fn(y_pred=y_pred, y_true=y_batch)
+                loss_grad = loss_fn.backward()
+                #print(loss_grad.shape)
+            
+                self.backward(loss_grad)
+                self.update_params()
+            if (epoch+1) % 1 == 0:
+                print(f"Epoch: {epoch + 1} | Loss: {loss:.4f} | Acc: {self.__accuracy_fn(np.argmax(y_pred, axis = 1), y_batch)}")
+        for epoch in range(epochs):
+
+            return 0
             
         
     def summary(self):
