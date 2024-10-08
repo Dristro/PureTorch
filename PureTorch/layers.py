@@ -142,6 +142,11 @@ class Sequential():
         """
         import numpy as np
         self.batch_size = batch_size
+
+        results = {"train_loss": [],
+                   "train_acc": [],
+                   "test_acc:": []} if track_acc else {"train_loss": []}
+        
         for epoch in range(epochs):
             permutation = np.random.permutation(len(X_train))
             X_train_shuffled = X_train[permutation]
@@ -149,22 +154,32 @@ class Sequential():
             for i in range(0, len(X_train), self.batch_size):
                 X_batch = X_train_shuffled[i:i+self.batch_size].reshape(self.batch_size, 28*28)
                 y_batch = y_train_shuffled[i:i+self.batch_size].flatten()
-            
-                y_pred = self.forward(X_batch)
-                #print(y_pred.shape)
-                #print(y_batch.shape)
                 
+                y_pred = self.forward(X_batch)                
                 loss = loss_fn(y_pred=y_pred, y_true=y_batch)
                 loss_grad = loss_fn.backward()
-                #print(loss_grad.shape)
             
                 self.backward(loss_grad)
                 self.update_params(lr = lr)
-            if (epoch+1) % print_freq == 0:
-                print(f"Epoch: {epoch + 1} | Loss: {loss:.4f} | Acc: {self.__accuracy_fn(np.argmax(y_pred, axis = 1), y_batch)}")
-        for epoch in range(epochs):
-
-            return 0
+            if track_acc:
+                y_preds = []
+                for sample, img in enumerate(X_test):
+                    img = img.reshape(1, -1)
+                    pred = self.forward(img)
+                    pred = pred.argmax(axis = 1)
+                    y_preds.append(pred[0])
+                test_acc = self.__accuracy_fn(y_pred = y_preds, y_true = y_test)
+                train_acc = self.__accuracy_fn(np.argmax(y_pred, axis = 1), y_batch)
+                results["train_acc"].append(train_acc)
+                results["test_acc"].append(test_acc)
+                if (epoch+1) % print_freq == 0:
+                    print(f"Epoch: {epoch + 1} | Train loss: {loss:.4f} | Train acc: {train_acc*100:.2f} % | Test acc: {test_acc*100:.2f} %")
+            else:
+                if (epoch+1) % print_freq == 0:
+                    print(f"Epoch: {epoch + 1} | Train loss: {loss:.4f}")
+            results["train_loss"].append(loss)
+        
+        return results
             
         
     def summary(self):
