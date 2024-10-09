@@ -1,9 +1,11 @@
+***
+# Table of contents
 |Title|Desc|
 |-|-|
 |[Version](#version-info)|Current version and features|
-|[Purpose](#purpose)|What and why|
-|[Structure](#structure)|File structure|
-|[Issues](#issues)|Known issues|
+|[Purpose](#purpose)|What and why of this repo|
+|[Structure](#structure)|File structure of various modules|
+|[Upcoming features](#upcoming-features)|Features that im working on|
 |[Setup](#setup)|How to setup locally|
 ****
 
@@ -38,20 +40,24 @@ As of now, the default optimizer is SGD.\
 To check the "development code" check the "dev" branch (will add it soon)
 ****
 
-# Issues
-<u>Known issues:</u>
-- Training only works if (data_size % batch_size) == 0, else the code breaks
-    - Bug fixed (in version 0.1.1)
+# Upcoming features
+These are the features that im working on, and will soon be a part of PureTorch.
+- Convolutional layer(s)
+    - 2D first, then 1D and multi-dim
 ****
 
 # Setup
-Install git before running this command in your env
+Install git before running this command in your env, then run:
 ```
 pip install "git+https://github.com/Dristro/PureTorch"
 ```
-Then run: (to verify the installation)
+Run: (to verify the installation in python)
 ```
 import PureTorch
 PureTorch.__version__
+```
+or: (to verify the installation on the terminal)
+```
+python3 -c "import PureTorch; print(PureTorch.__version__)"
 ```
 ****
