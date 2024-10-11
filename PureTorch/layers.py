@@ -235,5 +235,5 @@ class Sequential():
         sum = 0
         for layer in self.layers:
             print(f"{layer.__class__.__name__}\t\t| {layer.parameters()}")
-            sum += layer.parameters() if layer.parameters() is not None else 0
+            sum += layer.parameters() if isinstance(layer.parameters(), (int)) else 0
         print(f"Total params: {sum}")
