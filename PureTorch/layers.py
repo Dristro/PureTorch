@@ -1,3 +1,4 @@
+### Linear - feed forward layer (aka dense layer)
 class Linear():
     def __init__(self,
                  in_features: int,
@@ -55,7 +56,40 @@ class Linear():
         num_weights = self.weights.size
         num_bias = self.bias.size
         return num_weights + num_bias
+
+class Flatten():
+    def __init__(self,
+                 input_shape):
+        """
+        Flattens the input from input_shape into a 'flat' single dimension output_shape.
+        How it works:
+            input_shape = (x, y, z)
+            output_shape = x * y * z
+        """
+        from functools import reduce
+        import operator
+        self.input_shape = input_shape
+        self.output_shape = reduce(operator.mul, self.input_shape)
+
+    def forward(self, x):
+        """
+        Takes in a batch of inputs, and returns it with output_shape
+        """
+        import numpy as np
+        return x.reshape(-1, self.output_shape)
     
+    def backward(self, grad_output):
+        """
+        No gradients to track/change here, only converts the shape of the inputs
+        """
+        return grad_output
+
+    def parameters(self):
+        """
+        Returns a "f" string with the expected input and output shapes
+        """
+        return f"Input: {self.input_shape}, Output: {self.output_shape}"
+
 class Sequential():
     def __init__(self,
                  layers: list,
@@ -147,22 +181,27 @@ class Sequential():
                    "train_acc": [],
                    "test_acc": []} if track_acc else {"train_loss": []}
         
+        ### Train for "epochs" number of epochs
         for epoch in range(epochs):
+            ### Permute the datasets
             permutation = np.random.permutation(len(X_train))
             X_train_shuffled = X_train[permutation]
             y_train_shuffled = y_train[permutation]
             for i in range(0, len(X_train), self.batch_size):
-                X_batch = X_train_shuffled[i:i+self.batch_size].reshape(-1, 28*28)
+                ### Get batches from the permuted datasets
+                X_batch = X_train_shuffled[i:i+self.batch_size]
                 y_batch = y_train_shuffled[i:i+self.batch_size].flatten()
                 
-                y_pred = self.forward(X_batch)                
-                loss = loss_fn(y_pred=y_pred, y_true=y_batch)
-                loss_grad = loss_fn.backward()
+                ### Model steps
+                y_pred = self.forward(X_batch) # Forward pass
+                loss = loss_fn(y_pred=y_pred, y_true=y_batch) # Get loss
+                loss_grad = loss_fn.backward() # Get the loss grad for backward pass
+                self.backward(loss_grad) # Perform backward pass
+                self.update_params(lr = lr) # Update the weights and biases where applicable
             
-                self.backward(loss_grad)
-                self.update_params(lr = lr)
-            if track_acc:
+            if track_acc: # Track the accuracy scores in the 'results' Dict if user specifies
                 y_preds = []
+                # Calculate the accuracies
                 for img in X_test:
                     img = img.reshape(1, -1)
                     pred = self.forward(img)
@@ -170,13 +209,17 @@ class Sequential():
                     y_preds.append(pred[0])
                 test_acc = self.__accuracy_fn(y_pred = y_preds, y_true = y_test)
                 train_acc = self.__accuracy_fn(np.argmax(y_pred, axis = 1), y_batch)
+                # Add the accuracies to the 'results' Dict
                 results["train_acc"].append(train_acc)
                 results["test_acc"].append(test_acc)
+                # Print the scores with the accuracies
                 if (epoch+1) % print_freq == 0:
                     print(f"Epoch: {epoch + 1} | Train loss: {loss:.4f} | Train acc: {train_acc*100:.2f} % | Test acc: {test_acc*100:.2f} %")
+            # Print the scores with the loss ONLY
             else:
                 if (epoch+1) % print_freq == 0:
                     print(f"Epoch: {epoch + 1} | Train loss: {loss:.4f}")
+            # Add the training loss to the 'results' Dict
             results["train_loss"].append(loss)
         
         return results
