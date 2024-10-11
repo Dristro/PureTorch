@@ -38,7 +38,7 @@ The structure and essence of torch remains the same, but its fully implemented u
 
 Will be adding other layers, activations, losses, optimizers.\
 As of now, the default optimizer is SGD.\
-To check the "development code" check the "dev" branch (will add it soon)
+To check the "development code" check the "dev" branch
 ****
 
 # Upcoming features
