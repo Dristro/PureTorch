@@ -10,8 +10,8 @@
 ****
 
 # Version info
-**Current version** - 0.1.1\
-**New features** - added the training loop inside Sequential, you can train by using Sequential.train()
+**Current version** - 0.1.2\
+**New features** - new Flatten layer added inside PureTorch.layers
 
 *Runs on CPU only. Might add GPU support later.*
 ****
@@ -31,6 +31,7 @@ The structure and essence of torch remains the same, but its fully implemented u
     - layers
         - Sequential
         - Linear
+        - Flatten
     - loss
         - CrossEntropyLoss
         - SparseCrossEntropyLoss
@@ -54,7 +55,7 @@ pip install "git+https://github.com/Dristro/PureTorch"
 Run: (to verify the installation in python)
 ```
 import PureTorch
-PureTorch.__version__
+print(PureTorch.__version__)
 ```
 or: (to verify the installation on the terminal)
 ```
