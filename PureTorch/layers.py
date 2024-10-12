@@ -51,6 +51,14 @@ class Linear():
         ### dL/dX = dL/dY @ W
         grad_input = grad_output @ self.weights
         return grad_input
+    
+    def update_params(self, lr: float):
+        """
+        Updates the parameters of the Linear layer
+        """
+        self.weights -= lr*self.weights
+        if self.bias is not None:
+            self.bias -= lr*self.bias
         
     def parameters(self):
         num_weights = self.weights.size
@@ -83,6 +91,12 @@ class Flatten():
         No gradients to track/change here, only converts the shape of the inputs
         """
         return grad_output
+    
+    def update_params(self, lr: float):
+        """
+        No updates are done here
+        """
+        pass
 
     def parameters(self):
         """
@@ -166,8 +180,28 @@ class Conv2D():
         if self.padding > 0:
             padded_input = np.pad(self.input, ((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0)))
             d_input_padded = np.pad(d_input, ((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0)))
+        
+        for i in range(h_out):
+            for j in range(w_out):
+                for k in range(self.kernels):
+                    region = padded_input[:, i*self.stride:i*self.stride+k_size, j*self.stride:j*self.stride+f_size, :]
+                    self.d_weights[k] += np.sum(region * grad_out[:, i, j, k][:, np.newaxis, np.newaxis, np.newaxis], axis=0)
+                    if self.d_bias is not None:
+                        self.d_biases[k] += np.sum(grad_out[:, i, j, k], axis=0)
+                    d_input_padded[:, i*self.stride:i*self.stride+k_size, j*self.stride:j*self.stride+k_size, :] += self.weights[k] * grad_out[:, i, j, k][:, np.newaxis, np.newaxis, np.newaxis]
 
-            
+        if self.padding > 0:
+            d_input = d_input_padded[:, self.padding:-self.padding, self.padding:-self.padding, :]
+
+        return d_input
+    
+    def update_params(self, lr: float):
+        """
+        Updates the parameters of the Conv2D layer
+        """
+        self.weights -= lr*self.weights
+        if self.bias is not None:
+            self.bias -= lr*self.bias
 
 class Sequential():
     def __init__(self,
@@ -202,10 +236,13 @@ class Sequential():
         ### Update weights and biases using gradient descent
         self.lr = lr
         for layer in self.layers:
-            if isinstance(layer, Linear):
-                layer.weights = layer.weights - (self.lr * layer.weights_grad)
-                if layer.bias is not None:
-                    layer.bias = layer.bias - (self.lr * layer.bias_grad)
+            ### New update method, all layers should have them from v0.1.3
+            layer.update_params(lr = self.lr)
+            ### REMOVE THE BELOW CODE IF EVERYTHING WORKS WELL
+            #if isinstance(layer, Linear):
+            #    layer.weights = layer.weights - (self.lr * layer.weights_grad)
+            #    if layer.bias is not None:
+            #        layer.bias = layer.bias - (self.lr * layer.bias_grad)
 
     def __accuracy_fn(self, y_pred, y_true):
         import numpy as np
