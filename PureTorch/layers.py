@@ -255,6 +255,7 @@ class Sequential():
         """
         self.layers = layers
         self.name = name
+        self.compiled = False
         
     def forward(self, x):
         """
@@ -299,21 +300,20 @@ class Sequential():
             input_shape - expected input shape for the first layer of the model
         """
         import numpy as np
-        self.compiled = False
         current_shape = input_shape
         for layer in self.layers:
-            if layer.isinstance(Conv2D):
+            if layer.isinstance(layer, Conv2D):
                 layer.input_shape = current_shape
                 output_height = (current_shape[1] - layer.kernel_size + 2 * layer.padding) // layer.stride + 1
                 output_width = (current_shape[2] - layer.kernel_size + 2 * layer.padding) // layer.stride + 1
                 current_shape = (layer.kernels, output_height, output_width)  # Update shape for next layer
             
-            elif layer.isinstance(Flatten):
+            elif isinstance(layer, Flatten):
                 layer.input_shape = current_shape
                 layer.output_shape = np.prod(current_shape)
                 current_shape = (layer.output_shape,)
             
-            elif layer.isinstance(Linear):
+            elif isinstance(layer, Linear):
                 layer.input_shape = current_shape[1]
                 layer.output_shape = (layer.weights.shape[0],)
         self.compiled = True
