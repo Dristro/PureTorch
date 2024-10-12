@@ -5,6 +5,9 @@ class Linear():
                  out_features: int,
                  bias: bool = True,
                  seed: int = None):
+        """
+        Note: this layer expects to get a batch-dim first for any operation
+        """
         import numpy as np
         ### Create the weights and biases
         np.random.seed(seed)
@@ -56,9 +59,9 @@ class Linear():
         """
         Updates the parameters of the Linear layer
         """
-        self.weights -= lr*self.weights
+        self.weights -= lr*self.weights_grad
         if self.bias is not None:
-            self.bias -= lr*self.bias
+            self.bias -= lr*self.bias_grad
         
     def parameters(self):
         num_weights = self.weights.size
@@ -104,8 +107,6 @@ class Flatten():
         """
         return f"Input: {self.input_shape}, Output: {self.output_shape}"
 
-import numpy as np
-
 class Conv2D():
     def __init__(self,
                  kernels: int,
@@ -124,6 +125,7 @@ class Conv2D():
             stride - the 'jump' after each convolution
             bias - adds a learnable bias to the output if `True`
         """
+        import numpy as np
         self.kernels = kernels
         self.kernel_size = kernel_size
         self.padding = padding
@@ -143,6 +145,7 @@ class Conv2D():
         Returns:
             The output of the Conv2D layer
         """
+        import numpy as np
         self.input = x  # Store the input for backward pass
         b, c, h, w = x.shape  # Get (batch_size, input_channels, height, width)
 
@@ -188,6 +191,7 @@ class Conv2D():
         Returns:
             Gradient of the loss w.r.t the input of the layer
         """
+        import numpy as np
         ### Getting things ready
         b, c, h, w = self.input.shape  # (batch_size, input_channels, height, width)
         _, f, h_out, w_out = grad_out.shape  # (batch_size, filters, height_out, width_out)
@@ -286,6 +290,34 @@ class Sequential():
     def __accuracy_fn(self, y_pred, y_true):
         import numpy as np
         return np.sum(y_pred == y_true) / len(y_pred)
+    
+    def compile(self, input_shape: tuple):
+        """
+        Sets up the model, ensures that hte input/output shapes are correct for every layer.
+
+        Args:
+            input_shape - expected input shape for the first layer of the model
+        """
+        import numpy as np
+        self.compiled = False
+        current_shape = input_shape
+        for layer in self.layers:
+            if layer.isinstance(Conv2D):
+                layer.input_shape = current_shape
+                output_height = (current_shape[1] - layer.kernel_size + 2 * layer.padding) // layer.stride + 1
+                output_width = (current_shape[2] - layer.kernel_size + 2 * layer.padding) // layer.stride + 1
+                current_shape = (layer.kernels, output_height, output_width)  # Update shape for next layer
+            
+            elif layer.isinstance(Flatten):
+                layer.input_shape = current_shape
+                layer.output_shape = np.prod(current_shape)
+                current_shape = (layer.output_shape,)
+            
+            elif layer.isinstance(Linear):
+                layer.input_shape = current_shape[1]
+                layer.output_shape = (layer.weights.shape[0],)
+        self.compiled = True
+        print(f"Model: {self.name} | Compiled: {self.compiled} | Input shape: {input_shape}")
 
     def train(self,
               X_train,
@@ -330,18 +362,24 @@ class Sequential():
             # Here the model_train_results will contain the model's train and testing metrics as a Python dict.
         """
         import numpy as np
+        ### Check for compilation status
+        assert self.compiled, f"Compile the model before training it, this is will ensure that the correct input/output shapes are initialized for each layer"
         self.batch_size = batch_size
 
         results = {"train_loss": [],
                    "train_acc": [],
                    "test_acc": []} if track_acc else {"train_loss": []}
         
+        ### Getting things ready
+        
+
         ### Train for "epochs" number of epochs
         for epoch in range(epochs):
-            ### Permute the datasets
+            ### Permute the train dataset
             permutation = np.random.permutation(len(X_train))
             X_train_shuffled = X_train[permutation]
             y_train_shuffled = y_train[permutation]
+
             for i in range(0, len(X_train), self.batch_size):
                 ### Get batches from the permuted datasets
                 X_batch = X_train_shuffled[i:i+self.batch_size]
