@@ -9,6 +9,9 @@ class ReLU():
         grad_input = grad_output * (self.input > 0)
         return grad_input
     
+    def update_params(self, lr: float):
+        pass
+    
     def parameters(self):
         return None
 
@@ -21,6 +24,9 @@ class Softmax():
 
     def backward(self, grad_output):
         return grad_output  # Softmax doesn't change gradient during back-propagation
+
+    def update_params(self, lr: float):
+        pass
 
     def parameters(self):
         return None
@@ -38,5 +44,8 @@ class Tanh():
         grad_input = grad_output * (1 - self.output ** 2)
         return grad_input
         
+    def update_params(self, lr: float):
+        pass
+
     def parameters(self):
         return None
