@@ -117,7 +117,7 @@ class Conv2D():
 
         Args:
             kernels - number of kernels/filters
-            kernel_size - dimention of each kernel
+            kernel_size - dimention of each kernel (eg: kernel_size = 3  -> (3, 3))
             padding - padding added to the border of the input
             stride - the 'jump' after each convolution
             bias - adds a learable bias to the output if `True`
@@ -132,7 +132,7 @@ class Conv2D():
         self.padding = padding
         self.stride = stride
 
-        self.weights = np.random.randn((kernels,)+kernel_size) * 1e-2
+        self.weights = np.random.randn(kernels, kernel_size, kernel_size) * 1e-2
         self.bias = np.zeros(kernels) if bias else None
 
     def forward(self, x):
