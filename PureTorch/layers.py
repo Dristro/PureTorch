@@ -104,6 +104,8 @@ class Flatten():
         """
         return f"Input: {self.input_shape}, Output: {self.output_shape}"
 
+import numpy as np
+
 class Conv2D():
     def __init__(self,
                  kernels: int,
@@ -116,94 +118,126 @@ class Conv2D():
         (kernel_size, kernel_size).
 
         Args:
-            kernels - number of kernels/filters
-            kernel_size - dimention of each kernel (eg: kernel_size = 3  -> (3, 3))
+            kernels - number of filters (output channels)
+            kernel_size - dimension of each kernel (e.g., kernel_size = 3  -> (3, 3))
             padding - padding added to the border of the input
             stride - the 'jump' after each convolution
-            bias - adds a learable bias to the output if `True`
-
-        Returns:
-            An instance of the Conv2D layer with the given params
-
+            bias - adds a learnable bias to the output if `True`
         """
-        import numpy as np
         self.kernels = kernels
         self.kernel_size = kernel_size
         self.padding = padding
         self.stride = stride
 
-        self.weights = np.random.randn(kernels, kernel_size, kernel_size) * 1e-2
+        # Weight initialization (shape will be initialized during forward pass)
+        self.weights = None  # Initialized during forward pass based on input channels
         self.bias = np.zeros(kernels) if bias else None
 
     def forward(self, x):
-        ### Set things up
-        import numpy as np
-        self.input = x # Store the input
-        b, h, w, c = x.shape # Get the (batch, hieght, width, color channels) dimentions
-        k, k_size = self.weights.shape
+        """
+        Performs the forward pass in the Conv2D layer
 
-        ###  Calc the output shape
+        Args:
+            x: numpy array of shape (batch_size, channels, height, width)
+        
+        Returns:
+            The output of the Conv2D layer
+        """
+        self.input = x  # Store the input for backward pass
+        b, c, h, w = x.shape  # Get (batch_size, input_channels, height, width)
+
+        if self.weights is None:
+            # Initialize weights once we know the number of input channels (shape: kernels, input_channels, height, width)
+            self.weights = np.random.randn(self.kernels, c, self.kernel_size, self.kernel_size) * 1e-2
+
+        # Unpack weight shape
+        k, in_channels, k_size, _ = self.weights.shape
+
+        # Calculate output dimensions
         h_out = (h - k_size + 2 * self.padding) // self.stride + 1
         w_out = (w - k_size + 2 * self.padding) // self.stride + 1
 
-        ### Init the output
-        output = np.zeros((b, h_out, w_out, k))
+        # Initialize the output tensor (batch_size, kernels, output_height, output_width)
+        output = np.zeros((b, self.kernels, h_out, w_out))
 
-        ### Apply the padding
+        # Apply padding to the input (if required)
         if self.padding > 0:
-            x = np.pad(x, ((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0)), model = "constant")
-        
-        ### Convolute on the input
+            x = np.pad(x, ((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding)), mode="constant")
+
+        # Perform the convolution
         for i in range(h_out):
             for j in range(w_out):
                 for l in range(self.kernels):
-                    region = x[:, i*self.stride : i*self.stride+k_size, j*self.stride : j*self.stride+k_size, :]
-                    output[:, i, j, l] = np.sim(region * self.weights[l], axis = (1, 2, 3))
+                    # Extract region from input (taking a patch the size of the filter)
+                    region = x[:, :, i*self.stride:i*self.stride+k_size, j*self.stride:j*self.stride+k_size]
+                    # Convolve with the l-th filter (element-wise multiplication and sum across all input channels)
+                    output[:, l, i, j] = np.sum(region * self.weights[l, :, :, :], axis=(1, 2, 3))
+                    # Add bias (if any)
                     if self.bias is not None:
-                        output[:, i, j, l] += self.bias
-        
+                        output[:, l, i, j] += self.bias[l]
+
         return output
 
     def backward(self, grad_out):
+        """
+        Performs the backward pass on the Conv2D layer
+
+        Args:
+            grad_out: Gradient of the loss w.r.t the output of the layer (batch_size, kernels, height_out, width_out)
+
+        Returns:
+            Gradient of the loss w.r.t the input of the layer
+        """
         ### Getting things ready
-        import numpy as np
-        n, h_out, w_out, f = grad_out.shape
-        n, h, w, c = self.input.shape
+        b, c, h, w = self.input.shape  # (batch_size, input_channels, height, width)
+        _, f, h_out, w_out = grad_out.shape  # (batch_size, filters, height_out, width_out)
         k_size = self.kernel_size
 
-        ### Init the grads
+        ### Init the gradients
         self.d_weights = np.zeros_like(self.weights)
         self.d_bias = np.zeros_like(self.bias) if self.bias is not None else None
         d_input = np.zeros_like(self.input)
 
-        ### Padding
+        ### Apply padding to input and gradient input
         if self.padding > 0:
-            padded_input = np.pad(self.input, ((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0)))
-            d_input_padded = np.pad(d_input, ((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0)))
-        
+            padded_input = np.pad(self.input, ((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding)))
+            d_input_padded = np.pad(d_input, ((0, 0), (0, 0), (self.padding, self.padding), (self.padding, self.padding)))
+        else:
+            padded_input = self.input
+            d_input_padded = d_input
+
+        ### Perform the backward pass
         for i in range(h_out):
             for j in range(w_out):
-                for k in range(self.kernels):
-                    region = padded_input[:, i*self.stride:i*self.stride+k_size, j*self.stride:j*self.stride+k_size, :]
-                    self.d_weights[k] += np.sum(region * grad_out[:, i, j, k][:, np.newaxis, np.newaxis, np.newaxis], axis=0)
+                for l in range(self.kernels):
+                    # Extract region from input (similar to forward pass)
+                    region = padded_input[:, :, i*self.stride:i*self.stride+k_size, j*self.stride:j*self.stride+k_size]
+                    # Gradient with respect to weights
+                    self.d_weights[l] += np.sum(region * grad_out[:, l, i, j][:, np.newaxis, np.newaxis, np.newaxis], axis=0)
+                    # Gradient with respect to bias
                     if self.d_bias is not None:
-                        self.d_biases[k] += np.sum(grad_out[:, i, j, k], axis=0)
-                    d_input_padded[:, i*self.stride:i*self.stride+k_size, j*self.stride:j*self.stride+k_size, :] += self.weights[k] * grad_out[:, i, j, k][:, np.newaxis, np.newaxis, np.newaxis]
+                        self.d_bias[l] += np.sum(grad_out[:, l, i, j], axis=0)
+                    # Gradient with respect to input
+                    d_input_padded[:, :, i*self.stride:i*self.stride+k_size, j*self.stride:j*self.stride+k_size] += self.weights[l] * grad_out[:, l, i, j][:, np.newaxis, np.newaxis, np.newaxis]
 
+        ### Remove padding from d_input if padding was applied
         if self.padding > 0:
-            d_input = d_input_padded[:, self.padding:-self.padding, self.padding:-self.padding, :]
+            d_input = d_input_padded[:, :, self.padding:-self.padding, self.padding:-self.padding]
 
         return d_input
-    
+
     def update_params(self, lr: float):
         """
-        Updates the parameters of the Conv2D layer
+        Updates the parameters (weights and bias) of the Conv2D layer using SGD
         """
-        self.weights -= lr*self.weights
+        self.weights -= lr * self.d_weights
         if self.bias is not None:
-            self.bias -= lr*self.bias
+            self.bias -= lr * self.d_bias
 
     def parameters(self):
+        """
+        Returns the total number of parameters (weights and biases) in the Conv2D layer
+        """
         num_weights = self.weights.size
         num_bias = self.bias.size if self.bias is not None else 0
         return num_weights + num_bias
