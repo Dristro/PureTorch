@@ -302,7 +302,7 @@ class Sequential():
         import numpy as np
         current_shape = input_shape
         for layer in self.layers:
-            if layer.isinstance(layer, Conv2D):
+            if isinstance(layer, Conv2D):
                 layer.input_shape = current_shape
                 output_height = (current_shape[1] - layer.kernel_size + 2 * layer.padding) // layer.stride + 1
                 output_width = (current_shape[2] - layer.kernel_size + 2 * layer.padding) // layer.stride + 1
