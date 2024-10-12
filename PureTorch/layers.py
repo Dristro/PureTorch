@@ -147,7 +147,7 @@ class Conv2D():
         w_out = (w - k_size + 2 * self.padding) // self.stride + 1
 
         ### Init the output
-        output = np.zeros((n, h_out, w_out, k))
+        output = np.zeros((b, h_out, w_out, k))
 
         ### Apply the padding
         if self.padding > 0:
@@ -184,7 +184,7 @@ class Conv2D():
         for i in range(h_out):
             for j in range(w_out):
                 for k in range(self.kernels):
-                    region = padded_input[:, i*self.stride:i*self.stride+k_size, j*self.stride:j*self.stride+f_size, :]
+                    region = padded_input[:, i*self.stride:i*self.stride+k_size, j*self.stride:j*self.stride+k_size, :]
                     self.d_weights[k] += np.sum(region * grad_out[:, i, j, k][:, np.newaxis, np.newaxis, np.newaxis], axis=0)
                     if self.d_bias is not None:
                         self.d_biases[k] += np.sum(grad_out[:, i, j, k], axis=0)
