@@ -10,8 +10,8 @@
 ****
 
 # Version info
-**Current version** - 0.1.2\
-**New features** - new Flatten layer added inside PureTorch.layers
+**Current version** - 0.1.3+dev\
+**New features** - new `Sequential.compile()`, initializes the input and output shapes for the model's layers. New `Conv2D` layer, performs the convolution operation on a 2D input.
 
 *Runs on CPU only. Might add GPU support later.*
 ****
@@ -32,6 +32,7 @@ The structure and essence of torch remains the same, but its fully implemented u
         - Sequential
         - Linear
         - Flatten
+        - Conv2D
     - loss
         - CrossEntropyLoss
         - SparseCrossEntropyLoss
@@ -48,9 +49,11 @@ These are the features that im working on, and will soon be a part of PureTorch.
 ****
 
 # Setup
+***Note this for setting-up the "dev" branch locally***\
+*For the stable installation, go to the "main" branch's setup guide*<br></br>
 Install git before running this command in your env, then run:
 ```
-pip install "git+https://github.com/Dristro/PureTorch"
+pip install "git+https://github.com/Dristro/PureTorch@dev"
 ```
 Run: (to verify the installation in python)
 ```
@@ -61,4 +64,8 @@ or: (to verify the installation on the terminal)
 ```
 python3 -c "import PureTorch; print(PureTorch.__version__)"
 ```
+
+
+If the version looks like: 0.1.3+dev, then the package was installed correctly.\
+If not, try reinstalling the package (or) verify if you installed the stable (vs) development package.
 ****
