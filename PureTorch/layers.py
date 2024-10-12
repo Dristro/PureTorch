@@ -314,7 +314,7 @@ class Sequential():
                 current_shape = (layer.output_shape,)
             
             elif isinstance(layer, Linear):
-                layer.input_shape = current_shape[1]
+                layer.input_shape = current_shape[0]
                 layer.output_shape = (layer.weights.shape[0],)
         self.compiled = True
         print(f"Model: {self.name} | Compiled: {self.compiled} | Input shape: {input_shape}")
