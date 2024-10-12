@@ -62,7 +62,7 @@ class Linear():
         
     def parameters(self):
         num_weights = self.weights.size
-        num_bias = self.bias.size
+        num_bias = self.bias.size if self.bias is not None else 0
         return num_weights + num_bias
 
 class Flatten():
@@ -202,6 +202,11 @@ class Conv2D():
         self.weights -= lr*self.weights
         if self.bias is not None:
             self.bias -= lr*self.bias
+
+    def parameters(self):
+        num_weights = self.weights.size
+        num_bias = self.bias.size if self.bias is not None else 0
+        return num_weights + num_bias
 
 class Sequential():
     def __init__(self,
