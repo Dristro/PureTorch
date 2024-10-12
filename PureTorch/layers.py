@@ -90,6 +90,85 @@ class Flatten():
         """
         return f"Input: {self.input_shape}, Output: {self.output_shape}"
 
+class Conv2D():
+    def __init__(self,
+                 kernels: int,
+                 kernel_size: int,
+                 padding: int = 0,
+                 stride: int = 1,
+                 bias: bool = True):
+        """
+        Creates a Conv2D layer instance with 'kernels' number of filters of size,
+        (kernel_size, kernel_size).
+
+        Args:
+            kernels - number of kernels/filters
+            kernel_size - dimention of each kernel
+            padding - padding added to the border of the input
+            stride - the 'jump' after each convolution
+            bias - adds a learable bias to the output if `True`
+
+        Returns:
+            An instance of the Conv2D layer with the given params
+
+        """
+        import numpy as np
+        self.kernels = kernels
+        self.kernel_size = kernel_size
+        self.padding = padding
+        self.stride = stride
+
+        self.weights = np.random.randn((kernels,)+kernel_size) * 1e-2
+        self.bias = np.zeros(kernels) if bias else None
+
+    def forward(self, x):
+        ### Set things up
+        import numpy as np
+        self.input = x # Store the input
+        b, h, w, c = x.shape # Get the (batch, hieght, width, color channels) dimentions
+        k, k_size = self.weights.shape
+
+        ###  Calc the output shape
+        h_out = (h - k_size + 2 * self.padding) // self.stride + 1
+        w_out = (w - k_size + 2 * self.padding) // self.stride + 1
+
+        ### Init the output
+        output = np.zeros((n, h_out, w_out, k))
+
+        ### Apply the padding
+        if self.padding > 0:
+            x = np.pad(x, ((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0)), model = "constant")
+        
+        ### Convolute on the input
+        for i in range(h_out):
+            for j in range(w_out):
+                for l in range(self.kernels):
+                    region = x[:, i*self.stride : i*self.stride+k_size, j*self.stride : j*self.stride+k_size, :]
+                    output[:, i, j, l] = np.sim(region * self.weights[l], axis = (1, 2, 3))
+                    if self.bias is not None:
+                        output[:, i, j, l] += self.bias
+        
+        return output
+
+    def backward(self, grad_out):
+        ### Getting things ready
+        import numpy as np
+        n, h_out, w_out, f = grad_out.shape
+        n, h, w, c = self.input.shape
+        k_size = self.kernel_size
+
+        ### Init the grads
+        self.d_weights = np.zeros_like(self.weights)
+        self.d_bias = np.zeros_like(self.bias) if self.bias is not None else None
+        d_input = np.zeros_like(self.input)
+
+        ### Padding
+        if self.padding > 0:
+            padded_input = np.pad(self.input, ((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0)))
+            d_input_padded = np.pad(d_input, ((0, 0), (self.padding, self.padding), (self.padding, self.padding), (0, 0)))
+
+            
+
 class Sequential():
     def __init__(self,
                  layers: list,
