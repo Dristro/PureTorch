@@ -1,0 +1,19 @@
+# Changelog
+
+All notable changes to this project will be documented here.\
+This project adheres to [Semantic Versioning](https://semver.org/).\
+(Documented from v1.0.0+dev and onwards. Will add previous version documentation soon)
+<br></br>
+**Date formatting**: YYYY/MM/DD
+
+---
+
+## [1.0.0+dev] - 2024-11-17
+### Added
+- Introduced `PureTorch.Tensor`.
+- Added `PureTorch.nn` module with PyTorch-like syntax.
+- Introduced `PureTorch.nn.Perceptron` as a building block for layers.
+
+### Deprecated
+- Removed `PureTorch.layers.x`.
+- Temporarily removed activations, losses, and optimizers (will return soon).
