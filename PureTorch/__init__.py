@@ -1,6 +1,4 @@
-from . import activations
-from . import layers
-from . import loss
+from . import *
 
 __version__ = "1.0.0+dev"
 
