@@ -32,13 +32,14 @@ class Perceptron:
         Returns:
             Tensor after forward pass
         """
-        x = x if isinstance(x, Tensor) else Tensor(data = x, requires_grad = True)
+        x = x if isinstance(x, Tensor) else Tensor(data=x, requires_grad=True)
         x = np.array(x.data) # convert to np array
         logits = np.dot(self.weights.data, x) + self.bias.data # perform forward pass
         return Tensor(logits, _children=(self.weights, self.bias), requires_grad=True) # return Tensor(logits)
     
     def parameters(self):
-        return [self.weights] + [self.bias]
+        params = [self.weights] + [self.bias]
+        return params[0]
 
     def __call__(self, x):
         return self.forward(x)

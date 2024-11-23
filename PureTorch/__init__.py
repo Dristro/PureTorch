@@ -1,8 +1,8 @@
-from .Tensor import Tensor
-from . import nn
+from PureTorch.Tensor import Tensor
+from PureTorch import nn
 
 
-__version__ = "1.0.0+dev"
+__version__ = "v1.0.0+dev"
 
 __all__ = [
     "Tensor",

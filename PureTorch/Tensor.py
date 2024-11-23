@@ -11,7 +11,7 @@ class Tensor():
         Creates a Tensor instance with data.
 
         Args:
-            data          - data in tensor (accessible with Tensor.item)
+            data          - data in tensor (accessible with Tensor.data)
             _children     - instance's children (internal purpose)
             _operand      - operation on tensor (internal purpose)
             label         - name of tensor (used for drawing compute graph)
@@ -29,7 +29,7 @@ class Tensor():
         self._operand = _operand
         self.label = label
         self.requires_grad = requires_grad
-        self.grad = np.zeros_like(self.data, dtype=float) if requires_grad else np.zeros_like(self.data, dtype=float)
+        self.grad = np.zeros_like(self.data, dtype=float)
         self._backward = lambda: None
 
     def __add__(self, other):
@@ -160,7 +160,8 @@ class Tensor():
                 node._backward()
 
     def zero_grad(self):
-        self.grad = np.zeros_like(self.data)
+        if self.requires_grad:
+            self.grad = np.zeros_like(self.data)
 
 
     def __radd__(self, other):     # Reverse add

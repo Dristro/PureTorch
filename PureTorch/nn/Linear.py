@@ -37,7 +37,8 @@ class Linear():
         return logits
         
     def parameters(self):
-        return [p for perceptron in self.perceptrons for p in perceptron.parameters()]
+        params = [p for perceptron in self.perceptrons for p in perceptron.parameters()]
+        return params[0]
     
     def __call__(self, x):
         return self.forward(x)
