@@ -1,9 +1,8 @@
 from PureTorch import Tensor
 
-
-class Sequential():
+class Sequential:
     def __init__(self,
-                 layers: list,
+                 *layers,
                  name: str = "Sequential model"):
         """
         Creates a new Sequential instance with the given layers.
@@ -28,7 +27,7 @@ class Sequential():
             A Tensor with the output of the model on the input Tensor (x).
         """
         for layer in self.layers:
-            x = layer.forward()
+            x = layer.forward(x)
         return x
 
     def parameters(self):
@@ -41,9 +40,7 @@ class Sequential():
         """
         parameters = []
         for layer in self.layers:
-            param = layer.parameters() if hasattr(layer, "parameters") else []
-            parameters.append(param)
-        return parameters
+            yield from layer.parameters()
 
     def summary(self):
         """
@@ -55,7 +52,8 @@ class Sequential():
         sum = 0
         for layer in self.layers:
             print(f"{layer.__class__.__name__}\t\t| {len(layer.parameters())}")
-            sum += layer.parameters()
+            sum += len(layer.parameters())
         print(f"Total params: {sum}")
 
-Sequential([]).parameters()
+    def __call__(self, x):
+        return self.forward(x)

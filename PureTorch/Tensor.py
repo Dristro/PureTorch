@@ -22,15 +22,18 @@ class Tensor():
         """
         data = data.data if isinstance(data, Tensor) else data
         data = data if isinstance(data, (np.ndarray, np.generic)) else np.array(data)
-        #self.data = np.array(data.data, dtype=float).squeeze() if isinstance(data, Tensor) else np.array(data, dtype=float).squeeze()
+        # self.data = np.array(data.data, dtype=float).squeeze() if isinstance(data, Tensor) else np.array(data, dtype=float).squeeze()
         self.data = data
-        self.shape = self.data.shape
         self._prev = set(_children)
         self._operand = _operand
         self.label = label
         self.requires_grad = requires_grad
         self.grad = np.zeros_like(self.data, dtype=float)
         self._backward = lambda: None
+
+        # Numpy attributes
+        self.ndim = self.data.ndim
+        self.shape = self.data.shape
 
     def __add__(self, other):
         other = other if isinstance(other, Tensor) else Tensor(other)
@@ -43,13 +46,13 @@ class Tensor():
 
         def _backward():
             if self.requires_grad or other.requires_grad:
-                self.grad += out.grad  # Broadcasting handles shape alignment
+                self.grad += out.grad
                 other.grad += out.grad
             else:
                 self.grad += out.grad
                 other.grad += out.grad
-        out._backward = _backward
 
+        out._backward = _backward
         return out
 
     def __mul__(self, other):
@@ -68,8 +71,8 @@ class Tensor():
             else:
                 self.grad += out.grad
                 other.grad += out.grad
-        out._backward = _backward
 
+        out._backward = _backward
         return out
 
     def exp(self):
@@ -85,6 +88,7 @@ class Tensor():
                 self.grad += np.exp(self.data) * out.grad
             else:
                 self.grad += out.grad
+
         out._backward = _backward
         return out
 
@@ -92,7 +96,7 @@ class Tensor():
         assert isinstance(other, (int, float)), "Only supporting int/float powers for now"
         base = self.data.astype(float) if np.issubdtype(self.data.dtype, np.integer) else self.data
         out = Tensor(
-            data=base**(other),
+            data=base ** (other),
             _children=(self,),
             _operand=f"**{other}",
             requires_grad=self.requires_grad,
@@ -100,28 +104,28 @@ class Tensor():
 
         def _backward():
             if self.requires_grad:
-                self.grad += (other * base**(other - 1)) * out.grad
+                self.grad += (other * base ** (other - 1)) * out.grad
             else:
                 self.grad += out.grad
-        out._backward = _backward
 
+        out._backward = _backward
         return out
 
     def __truediv__(self, other):
-        out = self * (other**-1)
+        out = self * (other ** -1)
+
         def _backward():
-            if self.requires_grad or other.requires_grad:
-                self.grad = other.item * out.grad
-                other.grad = -self/(other**2) * out.grad
-            else:
-                self.grad += out.grad
-                other.grad += out.grad
+            if self.requires_grad:
+                self.grad += other.data * out.grad
+            if other.requires_grad:
+                other.grad += -self / (other ** 2) * out.grad
+
         return out
 
     def sum(self):
         """
         Sums all the data in the Tensor instance
-        
+
         Args:
             None (applies summation on the tensor)
         Returns:
@@ -154,7 +158,8 @@ class Tensor():
                 topo.append(v)
 
         build_topo(self)
-        self.grad = np.ones_like(self.data)  # Start with a gradient of 1 for scalars or arrays
+        # Start with a gradient of 1 for scalars or arrays
+        self.grad = np.ones_like(self.data) if self.data.ndim > 0 else np.array(1.0)
         for node in reversed(topo):
             if node.requires_grad:
                 node._backward()
@@ -163,28 +168,35 @@ class Tensor():
         if self.requires_grad:
             self.grad = np.zeros_like(self.data)
 
-
-    def __radd__(self, other):     # Reverse add
+    def __radd__(self, other):  # Reverse add
         return self + other
-        
-    def __sub__(self, other):      # Normal sub
+
+    def __sub__(self, other):  # Normal sub
         return self + (-other)
-    
-    def __rsub__(self, other):     # Reverse substitution
+
+    def __rsub__(self, other):  # Reverse substitution
         return -(self - other)
-    
-    def __neg__(self):             # Negation
-        return  self * -1
-    
-    def __rmul__(self, other):     # Reverse multiplication
+
+    def __neg__(self):  # Negation
+        return self * -1
+
+    def __rmul__(self, other):  # Reverse multiplication
         return self * other
-    
-    def __rtruediv__(self, other): # Reverse division
-        return (self**-1) * other
-    
+
+    def __rtruediv__(self, other):  # Reverse division
+        return (self ** -1) * other
+
     def __repr__(self):
-        return f"tensor(data={self.data}, requires_grad={self.requires_grad})"
-    
+        formatted_data = np.array2string(
+            self.data,
+            precision=4,
+            suppress_small=True,
+            separator=', ',
+            prefix=' ' * 7
+        )
+        statement = f"tensor({formatted_data}, requires_grad={self.requires_grad})" if self.requires_grad else f"tensor({formatted_data})"
+        return statement
+
 
 def tensor_sum(tensor: Tensor) -> Tensor:
     """
@@ -200,12 +212,12 @@ def tensor_sum(tensor: Tensor) -> Tensor:
     data = tensor.data
     requires_grad = tensor.requires_grad
     out = Tensor(
-        data = data.sum(),
-        requires_grad = requires_grad,
+        data=data.sum(),
+        requires_grad=requires_grad,
     )
-    
+
     def _backward():
         tensor.grad += out.grad
+
     out._backward = _backward
-    
     return out

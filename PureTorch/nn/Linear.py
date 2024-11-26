@@ -1,5 +1,6 @@
 from PureTorch.nn import Perceptron
 
+
 class Linear():
     def __init__(self,
                  in_features: int,
@@ -9,7 +10,7 @@ class Linear():
         NOTE: This class is likely to not work the updated version of Tensor.
               This method works for the version of `PureTorch.Tensor` that doesn't use NumPy.
 
-              
+
 
         Creates a layers of `Perceptrons` (found at PureTorch.nn.Perceptron)
 
@@ -21,7 +22,26 @@ class Linear():
         Returns:
             None
         """
-        self.perceptrons = [Perceptron(num_inputs = in_features, bias = bias) for _ in range(out_features)]
+        self.in_features = in_features
+        self.out_features = out_features
+
+        # Weights (normalized, -1 to 1)
+        weights_data = np.random.randn(out_features, in_features)
+        weights_norm = np.linalg.norm(weights_data)
+        epsilon = 1e-8
+        if weights_norm != 0:
+            weights_data /= (weights_norm + epsilon)
+        self.weights = Tensor(weights_data, requires_grad=True)
+
+        # Bias (normalized, -1 to 1)
+        if bias:
+            bias_data = np.random.randn(out_features)
+            bias_norm = np.linalg.norm(bias_data)
+            if bias_norm != 0:
+                bias_data /= (bias_norm + epsilon)
+            self.bias = Tensor(bias_data, requires_grad=True)
+        else:
+            self.bias = None
 
     def forward(self, x):
         """
@@ -29,16 +49,25 @@ class Linear():
 
         Args:
             x  - input to layer
-        
+
         Returns:
             list of outputs of the layer
         """
-        logits = [n(x) for n in self.perceptrons]
-        return logits
-        
+        # assert x.ndim >= 1, f"Add a batch-dim to the data, currently: {x.shape}"
+        out = Tensor(
+            np.dot(x.data, self.weights.data.T),
+            _children=(x, self.weights),
+            requires_grad=x.requires_grad or self.weights.requires_grad,
+        )
+        if self.bias is not None:
+            out.data += self.bias.data
+            out._prev.add(self.bias)
+        return out
+
     def parameters(self):
-        params = [p for perceptron in self.perceptrons for p in perceptron.parameters()]
-        return params[0]
-    
+        yield self.weights
+        if self.bias is not None:
+            yield self.bias
+
     def __call__(self, x):
         return self.forward(x)
