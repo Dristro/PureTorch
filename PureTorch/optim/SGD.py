@@ -1,5 +1,5 @@
 import PureTorch
-from PureTorch.optim import Optimizer
+from .optimizer import Optimizer
 from typing import List
 
 
