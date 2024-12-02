@@ -45,11 +45,9 @@ class Tensor():
         )
 
         def _backward():
-            if self.requires_grad or other.requires_grad:
+            if self.requires_grad:
                 self.grad += out.grad
-                other.grad += out.grad
-            else:
-                self.grad += out.grad
+            if other.requires_grad:
                 other.grad += out.grad
 
         out._backward = _backward
@@ -65,12 +63,10 @@ class Tensor():
         )
 
         def _backward():
-            if self.requires_grad or other.requires_grad:
+            if self.requires_grad:
                 self.grad += other.data * out.grad
+            if other.requires_grad:
                 other.grad += self.data * out.grad
-            else:
-                self.grad += out.grad
-                other.grad += out.grad
 
         out._backward = _backward
         return out
@@ -86,8 +82,6 @@ class Tensor():
         def _backward():
             if self.requires_grad:
                 self.grad += np.exp(self.data) * out.grad
-            else:
-                self.grad += out.grad
 
         out._backward = _backward
         return out
@@ -116,10 +110,35 @@ class Tensor():
 
         def _backward():
             if self.requires_grad:
-                self.grad += other.data * out.grad
+                self.grad += out.grad / other.data
             if other.requires_grad:
-                other.grad += -self / (other ** 2) * out.grad
+                other.grad += -self.data / (other.data ** 2) * out.grad
 
+        out._backward = _backward
+        return out
+
+    def __matmul__(self, other):
+        assert isinstance(other, Tensor), "Matrix multiplication requires 2 Tensor arguments"
+        # assert self.data.ndim == 2 and other.data.ndim == 2, f"Both tensors need to be 2D, got: {self.data.ndim} and {other.data.ndim}"
+        out = Tensor(
+            data=self.data @ other.data,
+            _children=(self, other),
+            _operand="matmul",
+            requires_grad=self.requires_grad or other.requires_grad,
+        )
+
+        def _backward():
+            ### DEBUGGING
+            # print("")
+            # print(f"SELF.data: {self.data.shape}")# | {self.data.shape}")
+            # print(f"OTHER.data: {other.data.shape}")# | {other.data.shape}")
+            # print(f"OUT.grad: {out.grad.shape}")
+            if self.requires_grad:
+                self.grad += out.grad @ other.data.T
+            if other.requires_grad:
+                other.grad += self.data.T @ out.grad
+
+        out._backward = _backward
         return out
 
     def sum(self):
@@ -158,15 +177,38 @@ class Tensor():
                 topo.append(v)
 
         build_topo(self)
-        # Start with a gradient of 1 for scalars or arrays
-        self.grad = np.ones_like(self.data) if self.data.ndim > 0 else np.array(1.0)
+        if np.all(self.grad == 0):
+            self.grad = np.ones_like(self.data) if self.data.ndim > 0 else np.array(1.0)
         for node in reversed(topo):
             if node.requires_grad:
                 node._backward()
 
     def zero_grad(self):
+        """
+        Sets the gradient of the Tensor object to zero
+        """
         if self.requires_grad:
             self.grad = np.zeros_like(self.data)
+
+    @property
+    def T(self):
+        """
+        Transpose of the Tensor if its 2D.
+        """
+        # assert self.ndim == 2, "Transpose only supported for 2D matrix"
+        out = Tensor(
+            data=self.data.T,
+            _children=(self,),
+            _operand="T",
+            requires_grad=self.requires_grad
+        )
+
+        def _backward():
+            if self.requires_grad:
+                self.grad += out.grad.T
+
+        out._backward = _backward
+        return out
 
     def __radd__(self, other):  # Reverse add
         return self + other

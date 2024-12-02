@@ -64,25 +64,14 @@ The structure and essence of torch remains the same, but its  implemented using 
 - PureTorch
     - nn
         - Linear
-        - Perceptron
+        - Perceptron (will be deprecated soon)
+        - Sequential
+    - optim
+      - Optimizer
+      - SGD
     - Tensor
 
-<u><b>Old file structure</b></u>:
-- PureTorch
-    - activations
-        - ReLU
-        - Softmax
-        - Tanh
-    - layers
-        - Sequential
-        - Linear
-        - Flatten
-        - Conv2D
-    - loss
-        - CrossEntropyLoss
-        - SparseCrossEntropyLoss
-
-Will be adding other layers, activations, losses, optimizers.
+Will be adding other layers, activations, losses and optimizers.
 
 ---
 

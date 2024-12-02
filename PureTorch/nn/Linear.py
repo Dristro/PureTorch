@@ -1,5 +1,5 @@
-from PureTorch.nn import Perceptron
-
+import numpy as np
+from PureTorch import Tensor
 
 class Linear():
     def __init__(self,
@@ -10,15 +10,11 @@ class Linear():
         NOTE: This class is likely to not work the updated version of Tensor.
               This method works for the version of `PureTorch.Tensor` that doesn't use NumPy.
 
-
-
         Creates a layers of `Perceptrons` (found at PureTorch.nn.Perceptron)
-
         Args:
             in_features   - number of inputs the layer expects
             out_features  - number of perceptrons in layer (number of outputs of the layer)
             bias          - adds a bias factor per-perceptron in layer if `True`
-
         Returns:
             None
         """
@@ -53,15 +49,14 @@ class Linear():
         Returns:
             list of outputs of the layer
         """
-        # assert x.ndim >= 1, f"Add a batch-dim to the data, currently: {x.shape}"
-        out = Tensor(
-            np.dot(x.data, self.weights.data.T),
-            _children=(x, self.weights),
-            requires_grad=x.requires_grad or self.weights.requires_grad,
+        # assert isinstance(x, Tensor), "Input x must be a Tensor."
+        assert x.data.shape[-1] == self.in_features, (
+            f"Expected input features {self.in_features}, "
+            f"but got {x.data.shape[-1]}."
         )
+        out = x @ self.weights.T
         if self.bias is not None:
-            out.data += self.bias.data
-            out._prev.add(self.bias)
+            out = out + self.bias
         return out
 
     def parameters(self):
