@@ -50,7 +50,7 @@ These are the features that im working on, and will soon be a part of PureTorch.
 # Setup
 Install git before running this command in your env, then run:
 ```
-pip install "git+https://github.com/Dristro/PureTorch"
+pip install PureTorch
 ```
 Run: (to verify the installation in python)
 ```

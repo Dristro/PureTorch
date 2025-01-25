@@ -1,3 +1,6 @@
 *.DS_Store
 .idea/
 dev_notebooks
+dist/
+PureTorch/PureTorch.egg-info/
+
