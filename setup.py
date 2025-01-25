@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "PureTorch",
-    version = "0.1.2",
+    version = "0.1.3",
     description = "Raw implementation of PyTorch using NumPy. Used to create deep-learning models.",
     long_description=Path("README.md").read_text(),
     long_description_content_type="text/markdown",

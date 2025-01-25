@@ -10,7 +10,7 @@
 ****
 
 # Version info
-**Current version** - 0.1.2\
+**Current version** - 0.1.3\
 **New features** - new Flatten layer added inside PureTorch.layers
 
 *Runs on CPU only. Might add GPU support later.*
