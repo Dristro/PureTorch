@@ -1,0 +1,15 @@
+LICENSE
+MANIFEST.in
+README.md
+pyproject.toml
+setup.py
+PureTorch/.DS_Store
+PureTorch/__init__.py
+PureTorch/activations.py
+PureTorch/layers.py
+PureTorch/loss.py
+PureTorch/PureTorch.egg-info/PKG-INFO
+PureTorch/PureTorch.egg-info/SOURCES.txt
+PureTorch/PureTorch.egg-info/dependency_links.txt
+PureTorch/PureTorch.egg-info/requires.txt
+PureTorch/PureTorch.egg-info/top_level.txt
