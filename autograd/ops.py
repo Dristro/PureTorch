@@ -6,19 +6,17 @@ from .function import Function
 class Add(Function):
     @staticmethod
     def forward(ctx: Context, a: np.ndarray, b: np.ndarray):
-        ctx.save_for_backward(a.shape, b.shape)
-        print(f"[DEBUG @ ops/Add.forward] ctx: {ctx} | ctx.saved_tensors: {ctx.saved_tensors}")
+        ctx.save_for_backward(None, None)  # we will not need the tensors
         return a + b
 
     @staticmethod
     def backward(ctx: Context, grad_output: np.ndarray):
-        print(f"[DEBUG @ ops/Add.forward] ctx: {ctx} | ctx.saved_tensors: {ctx.saved_tensors}")
         return grad_output, grad_output
 
 class Sub(Function):
     @staticmethod
     def forward(ctx: Context, a, b):
-        ctx.save_for_backward(a.shape, b.shape)
+        ctx.save_for_backward(None, None)  # we will not need the tensors
         return a - b
 
     @staticmethod
