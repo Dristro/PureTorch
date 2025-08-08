@@ -27,12 +27,10 @@ class Mul(Function):
     @staticmethod
     def forward(ctx: Context, a, b):
         ctx.save_for_backward(a, b)
-        print(f"[DEBUG @ ops/Mul.forward] ctx: {ctx} | ctx.saved_tensors: {ctx.saved_tensors}")
         return a * b
 
     @staticmethod
     def backward(ctx: Context, grad_output: np.ndarray):
-        print(f"[DEBUG @ ops/Mul.backward] ctx: {ctx} | ctx.saved_tensors: {ctx.saved_tensors}")
         a, b = ctx.saved_tensors
         return grad_output * b, grad_output * a
 
