@@ -1,9 +1,9 @@
-from PureTorch.Tensor import Tensor
-from PureTorch import nn
-from PureTorch import optim
+from puretorch.tensor import Tensor
+from puretorch import nn
+from puretorch import optim
 
 
-__version__ = "v1.0.0+dev"
+__version__ = "v1.1.0+dev"
 
 __all__ = [
     "Tensor",
