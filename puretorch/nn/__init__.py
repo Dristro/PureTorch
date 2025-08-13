@@ -1,5 +1,5 @@
-from .Sequential import Sequential
-from .Linear import Linear
+from .sequential import Sequential
+from .linear import Linear
 
 __all__ = [
     "Linear",

@@ -1,5 +1,5 @@
 import numpy as np
-from PureTorch import Tensor
+from puretorch import Tensor
 
 class Linear():
     def __init__(self,

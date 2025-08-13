@@ -1,16 +1,21 @@
-# tests/autograd_tests.py
+# tests/tensor_tests.py
 import os
 import sys
 sys.path.append(os.getcwd())
 
 import pytest
 import numpy as np
-from utils import make_dot
-from autograd import Variable
 
+from utils import make_dot
+
+import puretorch
+from puretorch import Tensor
+
+
+# same tests as tests/autograd_tests.py
 def test_add():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
-    t2 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
 
     out = t1 + t2
     out.backward()
@@ -21,8 +26,8 @@ def test_add():
 
 
 def test_sub():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
-    t2 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
 
     out = t1 - t2
     out.backward()
@@ -32,8 +37,8 @@ def test_sub():
 
 
 def test_mul():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
-    t2 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
 
     out = t1 * t2
     out.backward()
@@ -43,8 +48,8 @@ def test_mul():
 
 
 def test_div():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
-    t2 = Variable(np.random.randn(3, 4) + 1.5, requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Tensor(np.random.randn(3, 4) + 1.5, requires_grad=True, is_leaf=True)
 
     out = t1 / t2
     out.backward()
@@ -56,7 +61,7 @@ def test_div():
 
 
 def test_pow():
-    t1 = Variable(np.random.randn(3, 4) + 2.0, requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4) + 2.0, requires_grad=True, is_leaf=True)
     exponent = 3.0
     out = t1 ** exponent
     out.backward()
@@ -66,7 +71,7 @@ def test_pow():
 
 
 def test_neg():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
     out = -t1
     out.backward()
 
@@ -74,7 +79,7 @@ def test_neg():
 
 
 def test_scalar_ops():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
 
     out = t1 * 2.5 + 5
     out.backward()
@@ -83,8 +88,8 @@ def test_scalar_ops():
 
 
 def test_matmul():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
-    t2 = Variable(np.random.randn(4, 3), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Tensor(np.random.randn(4, 3), requires_grad=True, is_leaf=True)
 
     out = t1 @ t2
     out.backward()
@@ -98,7 +103,7 @@ def test_matmul():
 
 
 def test_sum():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
     out = t1.sum()
     out.backward()
 
@@ -106,7 +111,7 @@ def test_sum():
 
 
 def test_sum_dim():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
     out = t1.sum(dim=0)
     out.backward(np.ones((4,)))  # upstream gradient shape matches reduced shape
 
@@ -114,8 +119,8 @@ def test_sum_dim():
 
 
 def test_broadcasting_add():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
-    t2 = Variable(np.random.randn(4,), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Tensor(np.random.randn(4,), requires_grad=True, is_leaf=True)
 
     out = t1 + t2
     out.backward(np.ones_like(out.data))
@@ -125,7 +130,7 @@ def test_broadcasting_add():
 
 
 def test_gradient_accumulation():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
 
     out1 = t1 * 2
     out1.backward(np.ones_like(t1.data))
@@ -138,8 +143,8 @@ def test_gradient_accumulation():
 
 
 def test_requires_grad_false():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=False)
-    t2 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=False)
+    t2 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
 
     out = t1 + t2
     out.backward(np.ones_like(out.data))
@@ -149,11 +154,11 @@ def test_requires_grad_false():
 
 
 def test_complex_graph():
-    t1 = Variable(np.random.randn(10, 100), requires_grad=True, is_leaf=True)
-    t2 = Variable(np.random.randn(100, 5), requires_grad=True, is_leaf=True)
-    t3 = Variable(np.random.randn(10, 5), requires_grad=True, is_leaf=True)
-    t4 = Variable(np.random.randn(5, 10), requires_grad=True, is_leaf=True)
-    t5 = Variable(np.random.randn(10, 1), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(10, 100), requires_grad=True, is_leaf=True)
+    t2 = Tensor(np.random.randn(100, 5), requires_grad=True, is_leaf=True)
+    t3 = Tensor(np.random.randn(10, 5), requires_grad=True, is_leaf=True)
+    t4 = Tensor(np.random.randn(5, 10), requires_grad=True, is_leaf=True)
+    t5 = Tensor(np.random.randn(10, 1), requires_grad=True, is_leaf=True)
 
     out = t1 @ t2
     out = out + t3
@@ -169,8 +174,8 @@ def test_complex_graph():
 
 
 def test_chain_operations():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
-    t2 = Variable(np.random.randn(4,), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Tensor(np.random.randn(4,), requires_grad=True, is_leaf=True)
 
     out = ((t1 + 2) * 3 - t2) / 2
     out = out.sum()
@@ -181,7 +186,7 @@ def test_chain_operations():
 
 
 def test_multiple_outputs_and_branches():
-    t1 = Variable(np.random.randn(3, 3), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 3), requires_grad=True, is_leaf=True)
 
     out1 = t1 * 2
     out2 = t1 + 3
@@ -193,7 +198,7 @@ def test_multiple_outputs_and_branches():
 
 
 def test_mean():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
     out = t1.mean()
     out.backward()
 
@@ -202,8 +207,8 @@ def test_mean():
 
 
 def test_advanced_broadcasting_mul():
-    t1 = Variable(np.random.randn(5, 1, 4), requires_grad=True, is_leaf=True)
-    t2 = Variable(np.random.randn(1, 3, 1), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(5, 1, 4), requires_grad=True, is_leaf=True)
+    t2 = Tensor(np.random.randn(1, 3, 1), requires_grad=True, is_leaf=True)
 
     out = t1 * t2  # broadcast to (5, 3, 4)
     out.backward(np.ones_like(out.data))
@@ -213,7 +218,7 @@ def test_advanced_broadcasting_mul():
 
 
 def test_grad_non_leaf_tensor():
-    a = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    a = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
     b = a * 2
     c = b * 3
     out = c.sum()
@@ -227,7 +232,7 @@ def test_grad_non_leaf_tensor():
 
 
 def test_scalar_tensor():
-    a = Variable(np.array(5.0), requires_grad=True, is_leaf=True)
+    a = Tensor(np.array(5.0), requires_grad=True, is_leaf=True)
     b = a * a + 2 * a + 1  # (a + 1)^2
     b.backward()
 
@@ -240,7 +245,7 @@ def test_exp_log():
     rng = np.random.default_rng(0)
     x_data = rng.random((3, 4)) + 0.5  # (0.5, 1.5)
 
-    x = Variable(x_data, requires_grad=True, is_leaf=True)
+    x = Tensor(x_data, requires_grad=True, is_leaf=True)
 
     y = x.exp() + x.log()
     out = y.sum()
@@ -263,7 +268,7 @@ def test_exp_log():
 
 
 def test_gradient_accumulation_multiple_backward():
-    t1 = Variable(np.random.randn(2, 2), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(2, 2), requires_grad=True, is_leaf=True)
     out1 = t1 * 2
     out2 = t1 + 4
 
@@ -275,7 +280,7 @@ def test_gradient_accumulation_multiple_backward():
 
 
 def test_clone():
-    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
     t2 = t1 + 0  # clone via noop
 
     out = t2 * 3
@@ -285,7 +290,7 @@ def test_clone():
 
 
 def test_zero_grad_behavior():
-    t1 = Variable(np.random.randn(3, 3), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(3, 3), requires_grad=True, is_leaf=True)
 
     # First backward
     out = t1 * 2
@@ -304,7 +309,7 @@ def test_zero_grad_behavior():
 
 
 def test_reshape_and_transpose():
-    t1 = Variable(np.random.randn(2, 6), requires_grad=True, is_leaf=True)
+    t1 = Tensor(np.random.randn(2, 6), requires_grad=True, is_leaf=True)
 
     t2 = t1.reshape((3, 4))
     t3 = t2.T  # transpose
@@ -315,27 +320,27 @@ def test_reshape_and_transpose():
     assert np.allclose(t1.grad, np.ones_like(t1.data))
 
 def test_inplace_breaks_ctx_snapshot():
-    a = Variable(np.random.randn(3,3), requires_grad=True, is_leaf=True)
+    a = Tensor(np.random.randn(3,3), requires_grad=True, is_leaf=True)
     out = (a * 2).sum()        # snapshots a._version
     a.add_(1.0)                # bump a._version
     with pytest.raises(RuntimeError):
         out.backward()
 
 def test_inplace_on_nonleaf_disallowed():
-    a = Variable(np.random.randn(3,3), requires_grad=True, is_leaf=True)
+    a = Tensor(np.random.randn(3,3), requires_grad=True, is_leaf=True)
     b = a * 2                  # non-leaf that requires grad
     with pytest.raises(RuntimeError):
         b.add_(1.0)
 
 def test_inplace_update_bw_out():
-    a = Variable(np.random.randn(3,3), requires_grad=True, is_leaf=True)
+    a = Tensor(np.random.randn(3,3), requires_grad=True, is_leaf=True)
     out = (a * 2).sum()        # snapshots a._version
     a += a                # bump a._version
     with pytest.raises(RuntimeError):
         out.backward()
 
 def test_iadd_bumps_version_and_breaks_backward():
-    a = Variable(np.ones((2,2)), requires_grad=True, is_leaf=True)
+    a = Tensor(np.ones((2,2)), requires_grad=True, is_leaf=True)
     out = (a * 2).sum()
     a += 1.0                 # __iadd__ -> bump version
     import pytest
@@ -343,7 +348,7 @@ def test_iadd_bumps_version_and_breaks_backward():
         out.backward()
 
 def test_setitem_bumps_version():
-    a = Variable(np.zeros((3,)), requires_grad=True, is_leaf=True)
+    a = Tensor(np.zeros((3,)), requires_grad=True, is_leaf=True)
     out = (a + 1).sum()
     a[1] = 5                 # __setitem__ -> bump version
     import pytest
@@ -351,7 +356,7 @@ def test_setitem_bumps_version():
         out.backward()
 
 def test_data_write_is_blocked():
-    a = Variable(np.zeros((2,)), requires_grad=True, is_leaf=True)
+    a = Tensor(np.zeros((2,)), requires_grad=True, is_leaf=True)
     try:
         a.data += 1          # read-only view -> should raise
         raised = False
@@ -360,9 +365,56 @@ def test_data_write_is_blocked():
     assert raised
 
 def test_data_reassign_is_tracked():
-    a = Variable(np.zeros((2,)), requires_grad=True, is_leaf=True)
+    a = Tensor(np.zeros((2,)), requires_grad=True, is_leaf=True)
     out = (a + 1).sum()
     a.data = np.ones((2,))   # goes through setter -> bump version
     import pytest
     with pytest.raises(RuntimeError):
         out.backward()
+
+
+# new tests for Tensor
+def test_no_grad_tensor():
+    with puretorch.no_grad():
+        t1 = Tensor(data=[1.0], requires_grad=True)
+        t2 = Tensor(data=[1.0], requires_grad=True)
+    out1 = t1 * 5
+    out2 = t2 * 5
+    with pytest.raises(RuntimeError):
+        out1.backward()
+        out2.backward()
+    assert t1.grad is None
+    assert t2.grad is None
+
+def test_enable_grad():
+    with puretorch.enable_grad():
+        t1 = Tensor(data=[1.0], requires_grad=True)
+        t2 = Tensor(data=[1.0], requires_grad=False)
+    out1 = t1 * 5
+    out2 = t2 * 5
+    out1.backward()
+    with pytest.raises(RuntimeError):
+        out2.backward()
+    assert t1.grad is not None
+    assert t2.grad is None
+
+
+def my_func():
+    t1 = Tensor(np.random.randn(3, 3), requires_grad=True, is_leaf=True)
+
+    out1 = t1 * 2
+    out2 = t1 + 3
+    final = (out1 + out2).sum()
+    final.backward()
+
+    print(f"[FUN @ tests/tensor_tests.py] t1:\n{t1}")
+    print("---"*5)
+    print(f"[FUN @ tests/tensor_tests.py] out1:\n{out1}")
+    print("---"*5)
+    print(f"[FUN @ tests/tensor_tests.py] out2:\n{out2}")
+    print("---"*5)
+    print(f"[FUN @ tests/tensor_tests.py] final:\n{final}")
+    print("---"*5)
+
+if __name__ == "__main__":
+    my_func()

@@ -1,4 +1,4 @@
-import PureTorch
+import puretorch
 from typing import DefaultDict, List, Dict, Any, cast
 from collections import defaultdict
 from abc import abstractmethod
@@ -15,7 +15,7 @@ class Optimizer:
             raise TypeError("Parameters must be an iterable with Tensors or dicts, got: "
                             + params.__class__.__name__)
 
-        self.state: DefaultDict[PureTorch.Tensor, Any] = defaultdict(dict)
+        self.state: DefaultDict[puretorch.Tensor, Any] = defaultdict(dict)
         self.param_groups: List[Dict[str, Any]] = []
 
         param_groups = list(params)

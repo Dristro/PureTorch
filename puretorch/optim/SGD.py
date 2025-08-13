@@ -1,4 +1,3 @@
-import PureTorch
 from .optimizer import Optimizer
 from typing import List
 

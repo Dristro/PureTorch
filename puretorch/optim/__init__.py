@@ -1,4 +1,4 @@
-from .SGD import SGD
+from .sgd import SGD
 from .optimizer import Optimizer
 
 __all__ = {

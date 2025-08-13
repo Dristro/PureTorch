@@ -1,4 +1,4 @@
-from PureTorch import Tensor
+from puretorch import Tensor
 
 class Sequential:
     def __init__(self,

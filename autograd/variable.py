@@ -339,30 +339,48 @@ def enforce_tensor(x) -> Variable:
         return x
     return Variable(np.array(x, dtype=float), requires_grad=False, is_leaf=True)
 
-def _wrap_forward(fn_cls: type, *parents: Variable, **kwargs) -> Variable:
+def _wrap_forward(fn_cls: type, *parents, result_cls=None,  **kwargs) -> Variable:
     ctx = Context()
     parents_data = [parent._data for parent in parents]
     
     # forward
     out_data = fn_cls.forward(ctx, *parents_data, **kwargs)
 
-    # Create output variable
-    out = Variable(
-        data=out_data,
-        requires_grad=any(p.requires_grad for p in parents),
-        grad_fn=None,
-        is_leaf=False
-    )
+    # pick output class
+    if result_cls is None:
+        classes = {type(p) for p in parents}
+        if len(classes) == 1:
+            result_cls = classes.pop()
+        else:
+            # pick 'tensor' if any parent is tensor (higher priority to tensor-instances)
+            result_cls = next((type(p) for p in parents if p.__class__.__name__ == "Tensor"), Variable)
+
+    # Create output as tensor
+    if result_cls.__name__ == "Tensor":
+        out = result_cls(
+            data=out_data,
+            requires_grad=any(p.requires_grad for p in parents),
+            grad_fn=None,
+            is_leaf=False,
+            device=parents[0].device
+        )
+    
+    # Create output as variable
+    else:
+        out = Variable(
+            data=out_data,
+            requires_grad=any(p.requires_grad for p in parents),
+            grad_fn=None,
+            is_leaf=False,
+        )
 
     # Bind grad_fn instance, parents, and ctx
     fn = fn_cls()
     fn._ctx = ctx
     fn._parents = parents
-    
-    # context stores the versions
     ctx._version_snapshot = tuple(p._version for p in parents)
-
     out.grad_fn = fn
+    
     return out
 
 
