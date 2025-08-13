@@ -19,9 +19,9 @@
 
 # Version Info
 
-**Current Version**: **1.0.0+dev**
+**Current Version**: **1.1.0+dev**
 ### Migration Guide
-If you're upgrading from `v0.x.x` to `v1.0.0-beta`, please refer to the [Migration Guide](MIGRATIONGUIDE.md) for detailed instructions on updating your codebase.
+If you're upgrading from `v0.x.x` to `v1.x.x-dev`, please refer to the [Migration Guide](MIGRATIONGUIDE.md) for detailed instructions on updating your codebase.
 
 The guide covers:
 - Breaking changes in the API.
@@ -32,44 +32,49 @@ Click [here](MIGRATIONGUIDE.md) to view the Migration Guide.
 <br></br>
 
 ### New Features
-1. **`PureTorch.Tensor`**:
-   - A NumPy array wrapper to track gradients for efficient back-propagation.
-   - Back-propagation is easier and more convenient.
-2. **`PureTorch.nn`**:
-   - New modules replicate PyTorch's syntax and usability.
-3. **Perceptron as the Building Block**:
-   - Located at `PureTorch.nn.Perceptron`, this component will help build layers like `Linear`.
+1. **`puretorch.Tensor`**:
+   - autograd.tensor wrapper, tracks gradients for efficient back-propagation.
+   - back-propagation is easier and more convenient.
+2. **`puretorch.nn`**:
+   - neural network modules like: `linear`, `sequential`, more.
+3. **puretorch.optim**:
+   - optimizers like: `SGD`, other (will add more soon).
+4. **autograd**:
+   - autograd is now supported, allowing users to build custom functions and give full control over gradnients.
 <br></br>
 
 ### Deprecations
-1. The **PureTorch.layers.x** system is replaced with a simpler, PyTorch-like API.
-2. Temporarily removed activations, losses, and optimizers. These will return with updated functionality, supporting Tensors and Perceptrons.
+1. The **puretorch.layers.x** system is replaced with a simpler, PyTorch-like API.
+2. Temporarily removed activations, losses, and optimizers. These will return with updated functionality, supporting Tensors.
 <br></br>
 
-*The current implementation of a Tensor is inspired by **Andrej Karpathy's 'Micrograd'***
-<br></br>
-
-*Runs on CPU only. Might add GPU support later.*
+> *Runs on CPU only. Might add GPU support later.*
 
 ---
 
 # Purpose
-Raw implementation of PyTorch using NumPy.
+Raw implementation of PyTorch-like library using NumPy.
 The structure and essence of torch remains the same, but its  implemented using NumPy.
 
 ---
 
 # Structure
 <u><b>New file structure</b></u>:
-- PureTorch
+- puretorch
     - nn
-        - Linear
-        - Perceptron (will be deprecated soon)
-        - Sequential
+        - linear
+        - Perceptron (will be deprecated in v1.1.0)
+        - sequential
     - optim
-      - Optimizer
-      - SGD
-    - Tensor
+      - optimizer
+      - sgd
+    - tensor (autograd.tensor, modified for better nn compatibility)
+- autograd
+  - context
+  - engine (not in use now. Abstractions of tensor-ops will be added here, along with higher level tensor logic)
+  - function
+  - ops
+  - tensor
 
 Will be adding other layers, activations, losses and optimizers.
 
@@ -77,14 +82,16 @@ Will be adding other layers, activations, losses and optimizers.
 
 # Upcoming features
 These are the features that im working on, and will soon be a part of PureTorch.
-- Restoring the same functionality as PureTorch **v0.1.x**
+1. More optimizers (like sgd w/ momentum, adam, etc)
+2. Loss functions
+3. Model summary (like torchinfo.summary())
 
 ---
 
 # Setup
-***Note**:
+> **Note**:
 this for setting-up the "dev" branch locally.\
-**For the stable installation**: go to the "main" branch's setup guide\
+> **For stable installation**: go to the "main" branch's setup guide
 
 ### Prerequisites
 - Python 3.8 or higher
@@ -98,16 +105,15 @@ pip install "git+https://github.com/Dristro/PureTorch@dev"
 ```
 2. **Verify installation in Python**
 ```Python
-import PureTorch
-print(PureTorch.__version__)
+import puretorch
+print(puretorch.__version__)
 ```
 3. **Verify installation in the terminal**
 ```bash
-python3 -c "import PureTorch; print(PureTorch.__version__)"
+python3 -c "import puretorch; print(puretorch.__version__)"
 ```
 
-
-If the version indicated is: **1.0.0+dev**, then the package was installed correctly.\
+If the version indicated is: **1.1.0+dev**, then the package was installed correctly.\
 If not, try reinstalling the package (or) check if you installed the stable (vs) development package.
 
 ---
@@ -120,6 +126,6 @@ For those interested in contributing:
 - Make your changes.
 - Open a pull request with a detailed description of your changes.
 
-*Test cases will be added soon to help verify contributions.*
+*Test cases will be added soon to help verify contributions and new features.*
 
 ---

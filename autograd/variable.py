@@ -11,18 +11,20 @@ from .ops import (
     Div,
     Neg,
     MatMul,
-    Sum,
     Mean,
     Transpose,
     Reshape,
     ReLU,
     Pow,
+    VariableSum,
+    Exp,
+    Log,
 )
 
-class Tensor:
+class Variable:
     def __init__(
             self,
-            data: Union[int, float, list, tuple, np.ndarray, 'Tensor'],
+            data: Union[int, float, list, tuple, np.ndarray, 'Variable'],
             requires_grad: bool = False,
             grad_fn: Optional[Function] = None,
             is_leaf: bool = True,
@@ -43,18 +45,21 @@ class Tensor:
         self.grad = None
     
     def detach(self):
-        return Tensor(self.data.copy(), requires_grad=False, grad_fn=None, is_leaf=True)
+        return Variable(self.data.copy(), requires_grad=False, grad_fn=None, is_leaf=True)
 
     def requres_grad_(self, val=True):
         self.requires_grad = val
         return self
 
     def backward(self, gradient: Optional[np.ndarray] = None):
-        """
-        Compute gradients of the graph wrt current tensor.
-        If gradient isnt provided, its assumed to be one.
-        
+        r"""
+        Compute gradients of the graph w.r.t current tensor.
+        If `gradient = None`, then its assumed to be one.
+
         For custom gradients, ensure that: `gradient.shape == tensor.shape`
+
+        Args:
+            gradient (Optional[np.ndarray]): gradient of tensor
         """
         if not self.requires_grad:
             raise RuntimeError("Called .backward() on a tensor that doesn't require grad.")
@@ -66,7 +71,7 @@ class Tensor:
         # build topo sort
         topo = []
         visited = set()
-        def build(_tensor: 'Tensor'):
+        def build(_tensor: 'Variable'):
             if id(_tensor) in visited:
                 return
             visited.add(id(_tensor))
@@ -80,7 +85,8 @@ class Tensor:
         grads = {id(self): gradient.copy()}
 
         # use topo to propagate
-        for _tensor in reversed(topo):
+        gen = (_t for _t in reversed(topo) if _t.requires_grad)  # reduce number of indent-blocks
+        for _tensor in gen:
             grad = grads.get(id(_tensor))
             if grad is None:
                 continue
@@ -109,8 +115,12 @@ class Tensor:
                         grads[id(parent)] += g_out # accumulate grad, if tensor alr in dict
 
     # hooks
-    def register_hook(self, fn: Callable[['Tensor'], None]):
+    def register_hook(self, fn: Callable[['Variable'], None]):
         self._backward_hooks.append(fn)
+
+    # general functions
+    def reshape(self, shape: tuple):
+        return reshape(self, shape=shape)
 
     # math operators
     def __add__(self, other):
@@ -137,15 +147,35 @@ class Tensor:
     def __rtruediv__(self, other):
         return div(other, self)
 
+    def __neg__(self):
+        return neg(self)
+
     def __matmul__(self, other):
         return matmul(self, other)
+    
+    def __pow__(self, exp: Union[int, float]):
+        return pow(self, exp)
 
     @property
     def T(self):
         return transpose(self)
     
-def tensor(data, requires_grad=False):
-    return Tensor(np.array(data, dtype=float), requires_grad=requires_grad, is_leaf=True)
+    def sum(self, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False):
+        return tensor_sum(a=self, dim=dim, keepdims=keepdims)
+    
+    def mean(self, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False):
+        return mean(a=self, dim=dim, keepdims=keepdims)
+    
+    def exp(self):
+        return exp(a=self)
+    
+    def log(self):
+        return log(a=self)
+    
+# REMOVE: later
+#def tensor(shape: Tuple, requires_grad=False):
+#    """Generate random tensor instance of given shape."""
+#    return Variable(np.random.randn(shape, dtype=float), requires_grad=requires_grad, is_leaf=True)
 
 
 # Helpers for the tensor class (not accessed outside this file.)
@@ -163,26 +193,26 @@ def _unbroadcast(grad: np.ndarray, shape: Tuple[int, ...]) -> np.ndarray:
             grad = grad.sum(axis=i, keepdims=True)
     return grad.reshape(shape)
 
-def enforce_tensor(x) -> Tensor:
+def enforce_tensor(x) -> Variable:
     """
     Converts 'x' into a Tensor instance if not already.
     Used for tensor-ops.
     """
-    if isinstance(x, Tensor):
+    if isinstance(x, Variable):
         return x
-    return Tensor(np.array(x, dtype=float), requires_grad=False, is_leaf=True)
+    return Variable(np.array(x, dtype=float), requires_grad=False, is_leaf=True)
 
-def _wrap_forward(fn_cls: type, *parents: Tensor, **kwargs) -> Tensor:
+def _wrap_forward(fn_cls: type, *parents: Variable, **kwargs) -> Variable:
     """
     Wraps the forward-operation of a function (like: Add, Sub, etc)
     Used to setup optimized .backward() call.
     Sets up ctx, parents, grad_fn, etc
     """
     ctx = Context()
-    parent_datas = [parent.data for parent in parents]
+    parents_data = [parent.data for parent in parents]
     # forward
-    out_data = fn_cls.forward(ctx, *parent_datas, **kwargs)
-    out = Tensor(out_data, requires_grad=any(parent.requires_grad for parent in parents), grad_fn=None, is_leaf=False)
+    out_data = fn_cls.forward(ctx, *parents_data, **kwargs)
+    out = Variable(out_data, requires_grad=any(parent.requires_grad for parent in parents), grad_fn=None, is_leaf=False)
     # attach grad_fn instance with context and parents for backward
     fn = fn_cls()
     fn._ctx = ctx
@@ -219,19 +249,19 @@ def matmul(a,b):
     b = enforce_tensor(b)
     return _wrap_forward(MatMul, a, b)
 
-def sum_(a, axis=None, keepdims=False):
+def tensor_sum(a, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False):
     a = enforce_tensor(a)
-    return _wrap_forward(Sum, a, axis=axis, keepdims=keepdims)
+    return _wrap_forward(VariableSum, a, dim=dim, keepdims=keepdims)
 
-def mean(a, axis=None, keepdims=False):
+def mean(a, dim=None, keepdims=False):
     a = enforce_tensor(a)
-    return _wrap_forward(Mean, a, axis=axis, keepdims=keepdims)
+    return _wrap_forward(Mean, a, dim=dim, keepdims=keepdims)
 
 def transpose(a):
     a = enforce_tensor(a)
     return _wrap_forward(Transpose, a)
 
-def reshape(a, shape):
+def reshape(a, shape: tuple):
     a = enforce_tensor(a)
     return _wrap_forward(Reshape, a, shape=shape)
 
@@ -239,6 +269,14 @@ def relu(a):
     a = enforce_tensor(a)
     return _wrap_forward(ReLU, a)
 
-def pow_(a, exponent):
+def pow(a, exponent):
     a = enforce_tensor(a)
     return _wrap_forward(Pow, a, exponent=exponent)
+
+def exp(a):
+    a = enforce_tensor(a)
+    return _wrap_forward(Exp, a)
+
+def log(a):
+    a = enforce_tensor(a)
+    return _wrap_forward(Log, a)

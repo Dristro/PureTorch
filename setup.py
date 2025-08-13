@@ -2,9 +2,9 @@ from setuptools import setup, find_packages
 
 setup(
     name = "PureTorch",
-    version = "v1.0.0+dev",
+    version = "v1.1.0+dev",
     author = "Dhruv",
-    description = "Raw implementation of PyTorch using NumPy. Structured similar to PyTorch, used to create deep learning models without using PyTorch and TensorFlow.",
+    description = "Custom implementation of a Neural Network library using numpy. Now supports autograd.",
     url = "https://github.com/Dristro/PureTorch.git",
     packages = find_packages(),
     install_requires = [

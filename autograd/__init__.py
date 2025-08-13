@@ -1,9 +1,9 @@
-from .tensor import Tensor
+from .variable import Variable
 from .context import Context
 from .function import Function
 
 __all__ = [
-    "Tensor",
+    "Variable",
     "Context",
     "Function",
 ]

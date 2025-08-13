@@ -1,82 +1,314 @@
+# tests/test_autograd_engine.py
 import os
 import sys
 sys.path.append(os.getcwd())
 
 import numpy as np
-from autograd import Tensor
+from autograd import Variable
+from utils import make_dot
 
-def test_sum():
-    t1 = Tensor(data=np.random.randn(3, 4), requires_grad=True, grad_fn=None, is_leaf=True)
-    t2 = Tensor(data=np.random.randn(3, 4), requires_grad=True, grad_fn=None, is_leaf=True)
-    
+def test_add():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+
     out = t1 + t2
-    out.backward(gradient=None)  # assumes grad = 1 | shape: (3, 4)
-    
-    t1_expected_grad = np.ones_like(out.data)
-    t2_expected_grad = np.ones_like(out.data)
-    
-    assert np.array_equal(t1.grad, t1_expected_grad)
-    assert np.array_equal(t2.grad, t2_expected_grad)
+    out.backward()
 
-def test_mul():
-    t1 = Tensor(data=np.random.randn(3, 4), requires_grad=True, grad_fn=None, is_leaf=True)
-    t2 = Tensor(data=np.random.randn(3, 4), requires_grad=True, grad_fn=None, is_leaf=True)
-    
-    out = t1 * t2
-    out.backward(gradient=None)  # assumes grad = 1 | shape: (3, 4)
-    
-    t1_expected_grad = t2.data
-    t2_expected_grad = t1.data
-    
-    assert np.array_equal(t1.grad, t1_expected_grad)
-    assert np.array_equal(t2.grad, t2_expected_grad)
+    expected_grad = np.ones_like(out.data)
+    assert np.array_equal(t1.grad, expected_grad)
+    assert np.array_equal(t2.grad, expected_grad)
+
 
 def test_sub():
-    t1 = Tensor(data=np.random.randn(3, 4), requires_grad=True, grad_fn=None, is_leaf=True)
-    t2 = Tensor(data=np.random.randn(3, 4), requires_grad=True, grad_fn=None, is_leaf=True)
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
 
     out = t1 - t2
-    out.backward(gradient=None)
+    out.backward()
 
-    t1_expected_grad = np.ones_like(out.data)
-    t2_expected_grad = -np.ones_like(out.data)
-    
-    assert np.array_equal(t1.grad, t1_expected_grad)
-    assert np.array_equal(t2.grad, t2_expected_grad)
+    assert np.array_equal(t1.grad, np.ones_like(out.data))
+    assert np.array_equal(t2.grad, -np.ones_like(out.data))
+
+
+def test_mul():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+
+    out = t1 * t2
+    out.backward()
+
+    assert np.allclose(t1.grad, t2.data)
+    assert np.allclose(t2.grad, t1.data)
+
+
+def test_div():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Variable(np.random.randn(3, 4) + 1.5, requires_grad=True, is_leaf=True)
+
+    out = t1 / t2
+    out.backward()
+
+    expected_t1_grad = 1 / t2.data
+    expected_t2_grad = -t1.data / (t2.data ** 2)
+    assert np.allclose(t1.grad, expected_t1_grad)
+    assert np.allclose(t2.grad, expected_t2_grad)
+
+
+def test_pow():
+    t1 = Variable(np.random.randn(3, 4) + 2.0, requires_grad=True, is_leaf=True)
+    exponent = 3.0
+    out = t1 ** exponent
+    out.backward()
+
+    expected_grad = exponent * (t1.data ** (exponent - 1))
+    assert np.allclose(t1.grad, expected_grad)
+
+
+def test_neg():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    out = -t1
+    out.backward()
+
+    assert np.allclose(t1.grad, -np.ones_like(t1.data))
+
+
+def test_scalar_ops():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+
+    out = t1 * 2.5 + 5
+    out.backward()
+
+    assert np.allclose(t1.grad, np.ones_like(t1.data) * 2.5)
+
 
 def test_matmul():
-    t1 = Tensor(data=np.random.randn(3, 4), requires_grad=True, grad_fn=None, is_leaf=True)
-    t2 = Tensor(data=np.random.randn(4, 3), requires_grad=True, grad_fn=None, is_leaf=True)
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Variable(np.random.randn(4, 3), requires_grad=True, is_leaf=True)
 
     out = t1 @ t2
-    out.backward(gradient=None)
+    out.backward()
 
-    t1_expected_grad = np.ones_like(out.data) @ t2.data.T
-    t2_expected_grad = t1.data.T @ np.ones_like(out.data)
-    
+    expected_t1_grad = np.ones_like(out.data) @ t2.data.T
+    expected_t2_grad = t1.data.T @ np.ones_like(out.data)
+
     assert out.shape == (3, 3)
-    assert np.array_equal(t1.grad, t1_expected_grad)
-    assert np.array_equal(t2.grad, t2_expected_grad)
+    assert np.allclose(t1.grad, expected_t1_grad)
+    assert np.allclose(t2.grad, expected_t2_grad)
+
+
+def test_sum():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    out = t1.sum()
+    out.backward()
+
+    assert np.allclose(t1.grad, np.ones_like(t1.data))
+
+
+def test_sum_dim():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    out = t1.sum(dim=0)
+    out.backward(np.ones((4,)))  # upstream gradient shape matches reduced shape
+
+    assert np.allclose(t1.grad, np.ones_like(t1.data))
+
+
+def test_broadcasting_add():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Variable(np.random.randn(4,), requires_grad=True, is_leaf=True)
+
+    out = t1 + t2
+    out.backward(np.ones_like(out.data))
+
+    assert np.allclose(t1.grad, np.ones_like(t1.data))
+    assert np.allclose(t2.grad, np.ones_like(t2.data) * 3)  # summed over axis 0
+
+
+def test_gradient_accumulation():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+
+    out1 = t1 * 2
+    out1.backward(np.ones_like(t1.data))
+
+    out2 = t1 + 5
+    out2.backward(np.ones_like(t1.data))
+
+    expected_grad = (np.ones_like(t1.data) * 2) + np.ones_like(t1.data)
+    assert np.allclose(t1.grad, expected_grad)
+
+
+def test_requires_grad_false():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=False)
+    t2 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+
+    out = t1 + t2
+    out.backward(np.ones_like(out.data))
+
+    assert t1.grad is None
+    assert np.allclose(t2.grad, np.ones_like(t2.data))
+
 
 def test_complex_graph():
-    t1 = Tensor(data=np.random.randn(10, 100), requires_grad=True, is_leaf=True)
-    t2 = Tensor(data=np.random.randn(100, 5), requires_grad=True, is_leaf=True)
-    t3 = Tensor(data=np.random.randn(10, 5), requires_grad=True, is_leaf=True)
-    t4 = Tensor(data=np.random.randn(5, 10), requires_grad=True, is_leaf=True)
-    t5 = Tensor(data=np.random.randn(10, 1), requires_grad=True, is_leaf=True)
+    t1 = Variable(np.random.randn(10, 100), requires_grad=True, is_leaf=True)
+    t2 = Variable(np.random.randn(100, 5), requires_grad=True, is_leaf=True)
+    t3 = Variable(np.random.randn(10, 5), requires_grad=True, is_leaf=True)
+    t4 = Variable(np.random.randn(5, 10), requires_grad=True, is_leaf=True)
+    t5 = Variable(np.random.randn(10, 1), requires_grad=True, is_leaf=True)
 
-    out = t1 @ t2     # (10, 100) @ (100, 5) = (10, 5)
-    out = out + t3    # (10, 5) + (10, 5) = (10, 5)
-    out = out @ t4    # (10, 5) @ (5, 10) = (10, 10)
-    out = out @ t5    #(10, 10) @ (10, 1) = (10, 1)
-    out.backward(gradient=None)
+    out = t1 @ t2
+    out = out + t3
+    out = out @ t4
+    out = out @ t5
+    out.backward()
 
-    assert all([
-        t1.grad is not None,
-        t2.grad is not None,
-        t3.grad is not None,
-        t4.grad is not None,
-        t5.grad is not None,
-        ])
-    assert np.array_equal(out.data, (((t1.data @ t2.data) + t3.data) @ t4.data) @ t5.data)
+    assert all(g.grad is not None for g in [t1, t2, t3, t4, t5])
+    np.testing.assert_allclose(
+        out.data, (((t1.data @ t2.data) + t3.data) @ t4.data) @ t5.data
+    )
     assert out.shape == (10, 1)
+
+
+def test_chain_operations():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = Variable(np.random.randn(4,), requires_grad=True, is_leaf=True)
+
+    out = ((t1 + 2) * 3 - t2) / 2
+    out = out.sum()
+    out.backward()
+
+    assert t1.grad.shape == t1.data.shape
+    assert t2.grad.shape == t2.data.shape
+
+
+def test_multiple_outputs_and_branches():
+    t1 = Variable(np.random.randn(3, 3), requires_grad=True, is_leaf=True)
+
+    out1 = t1 * 2
+    out2 = t1 + 3
+    final = (out1 + out2).sum()
+    final.backward()
+
+    expected_grad = np.ones_like(t1.data) * (2 + 1)
+    assert np.allclose(t1.grad, expected_grad)
+
+
+def test_mean():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    out = t1.mean()
+    out.backward()
+
+    expected = np.ones_like(t1.data) / t1.data.size
+    assert np.allclose(t1.grad, expected)
+
+
+def test_advanced_broadcasting_mul():
+    t1 = Variable(np.random.randn(5, 1, 4), requires_grad=True, is_leaf=True)
+    t2 = Variable(np.random.randn(1, 3, 1), requires_grad=True, is_leaf=True)
+
+    out = t1 * t2  # broadcast to (5, 3, 4)
+    out.backward(np.ones_like(out.data))
+
+    assert t1.grad.shape == t1.data.shape
+    assert t2.grad.shape == t2.data.shape
+
+
+def test_grad_non_leaf_tensor():
+    a = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    b = a * 2
+    c = b * 3
+    out = c.sum()
+    out.backward()
+    
+    # b is not a leaf, so the gradient is never 'stored'
+    assert np.allclose(a.grad, np.ones_like(a.data) * 6)
+    assert b.grad is None
+    assert c.grad is None
+    assert out.grad is None
+
+
+def test_scalar_tensor():
+    a = Variable(np.array(5.0), requires_grad=True, is_leaf=True)
+    b = a * a + 2 * a + 1  # (a + 1)^2
+    b.backward()
+
+    expected_grad = 2 * (a.data + 1)
+    assert np.allclose(a.grad, expected_grad)
+
+
+def test_exp_log():
+    # keep inputs strictly positive for log()
+    rng = np.random.default_rng(0)
+    x_data = rng.random((3, 4)) + 0.5  # (0.5, 1.5)
+
+    x = Variable(x_data, requires_grad=True, is_leaf=True)
+
+    y = x.exp() + x.log()
+    out = y.sum()
+    out.backward()
+    
+    expected_grad = np.exp(x_data) + 1.0 / x_data
+    assert np.allclose(x.grad, expected_grad, rtol=1e-6, atol=1e-6)
+
+    eps = 1e-6
+    num_grad = np.zeros_like(x_data)
+    for k in range(x_data.size):
+        idx = np.unravel_index(k, x_data.shape)
+        x_pos = x_data.copy(); x_pos[idx] += eps
+        x_neg = x_data.copy(); x_neg[idx] -= eps
+        f_pos = np.sum(np.exp(x_pos) + np.log(x_pos))
+        f_neg = np.sum(np.exp(x_neg) + np.log(x_neg))
+        num_grad[idx] = (f_pos - f_neg) / (2 * eps)
+
+    assert np.allclose(x.grad, num_grad, rtol=1e-4, atol=1e-4)
+
+
+def test_gradient_accumulation_multiple_backward():
+    t1 = Variable(np.random.randn(2, 2), requires_grad=True, is_leaf=True)
+    out1 = t1 * 2
+    out2 = t1 + 4
+
+    out1.backward(np.ones_like(t1.data))
+    out2.backward(np.ones_like(t1.data))
+
+    expected = np.ones_like(t1.data) * 3
+    assert np.allclose(t1.grad, expected)
+
+
+def test_clone():
+    t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
+    t2 = t1 + 0  # clone via noop
+
+    out = t2 * 3
+    out.sum().backward()
+
+    assert np.allclose(t1.grad, np.ones_like(t1.data) * 3)
+
+
+def test_zero_grad_behavior():
+    t1 = Variable(np.random.randn(3, 3), requires_grad=True, is_leaf=True)
+
+    # First backward
+    out = t1 * 2
+    out.sum().backward()
+    first_grad = t1.grad.copy()
+    assert np.allclose(first_grad, 2 * np.ones_like(t1.data))
+
+    # Zero grad should set grad to None
+    t1.zero_grad()
+    assert t1.grad is None
+
+    # Backward again with a new forward
+    out = t1 * 3
+    out.sum().backward()
+    assert np.allclose(t1.grad, 3 * np.ones_like(t1.data))
+
+
+def test_reshape_and_transpose():
+    t1 = Variable(np.random.randn(2, 6), requires_grad=True, is_leaf=True)
+
+    t2 = t1.reshape((3, 4))
+    t3 = t2.T  # transpose
+    out = t3.sum()
+    out.backward()
+
+    # The derivative of sum wrt every element is 1
+    assert np.allclose(t1.grad, np.ones_like(t1.data))
