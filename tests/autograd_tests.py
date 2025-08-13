@@ -3,9 +3,10 @@ import os
 import sys
 sys.path.append(os.getcwd())
 
+import pytest
 import numpy as np
-from autograd import Variable
 from utils import make_dot
+from autograd import Variable
 
 def test_add():
     t1 = Variable(np.random.randn(3, 4), requires_grad=True, is_leaf=True)
@@ -312,3 +313,56 @@ def test_reshape_and_transpose():
 
     # The derivative of sum wrt every element is 1
     assert np.allclose(t1.grad, np.ones_like(t1.data))
+
+def test_inplace_breaks_ctx_snapshot():
+    a = Variable(np.random.randn(3,3), requires_grad=True, is_leaf=True)
+    out = (a * 2).sum()        # snapshots a._version
+    a.add_(1.0)                # bump a._version
+    with pytest.raises(RuntimeError):
+        out.backward()
+
+def test_inplace_on_nonleaf_disallowed():
+    a = Variable(np.random.randn(3,3), requires_grad=True, is_leaf=True)
+    b = a * 2                  # non-leaf that requires grad
+    with pytest.raises(RuntimeError):
+        b.add_(1.0)
+
+def test_inplace_update_bw_out():
+    a = Variable(np.random.randn(3,3), requires_grad=True, is_leaf=True)
+    out = (a * 2).sum()        # snapshots a._version
+    a += a                # bump a._version
+    with pytest.raises(RuntimeError):
+        out.backward()
+
+def test_iadd_bumps_version_and_breaks_backward():
+    a = Variable(np.ones((2,2)), requires_grad=True, is_leaf=True)
+    out = (a * 2).sum()
+    a += 1.0                 # __iadd__ -> bump version
+    import pytest
+    with pytest.raises(RuntimeError):
+        out.backward()
+
+def test_setitem_bumps_version():
+    a = Variable(np.zeros((3,)), requires_grad=True, is_leaf=True)
+    out = (a + 1).sum()
+    a[1] = 5                 # __setitem__ -> bump version
+    import pytest
+    with pytest.raises(RuntimeError):
+        out.backward()
+
+def test_data_write_is_blocked():
+    a = Variable(np.zeros((2,)), requires_grad=True, is_leaf=True)
+    try:
+        a.data += 1          # read-only view -> should raise
+        raised = False
+    except ValueError:
+        raised = True
+    assert raised
+
+def test_data_reassign_is_tracked():
+    a = Variable(np.zeros((2,)), requires_grad=True, is_leaf=True)
+    out = (a + 1).sum()
+    a.data = np.ones((2,))   # goes through setter -> bump version
+    import pytest
+    with pytest.raises(RuntimeError):
+        out.backward()

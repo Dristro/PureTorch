@@ -1,6 +1,47 @@
 import numpy as np
+from typing import Union, Optional
+from ..autograd import Variable, Function
 
-class Tensor():
+class Tensor(Variable):
+    def __init__(
+        self,
+        data: Union[int, float, list, tuple, np.ndarray, Variable],
+        requires_grad: bool = False,
+        grad_fn: Optional[Function] = None,
+        is_leaf: bool = True,
+        version: int = 0,
+    ):
+        """
+        Creates a Tensor instance with data.
+
+        Args:
+            data: data in tensor
+            requires_grad: tracks gradient if `True`
+            grad_fn: function used to arrive to current tensor
+            is_leaf: is tensor a leaf-tensor
+            version: internal, to allow proper gradient flow in `.backward`
+        """
+        super().__init__(
+            data=data,
+            requires_grad=requires_grad,
+            grad_fn=grad_fn,
+            is_leaf=is_leaf,
+            version=version
+        )
+
+    @property
+    def device(self):  # for future gpu support
+        return "cpu"
+
+    def item(self):
+        return self.data
+        
+    def __repr__(self):
+        return f"tensor({self.data!r}, requires_grad={self.requires_grad}, device={self.device}, dtype={self.dtype})"
+
+
+
+class _Tensor():
     def __init__(self,
                  data,
                  _children: tuple = (),
