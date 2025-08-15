@@ -10,6 +10,7 @@ from utils import make_dot
 
 import puretorch
 from puretorch import Tensor
+import puretorch.nn.functional as F
 
 
 # same tests as tests/autograd_tests.py
@@ -398,6 +399,23 @@ def test_enable_grad():
     assert t1.grad is not None
     assert t2.grad is None
 
+def test_cross_entropy_grad_matches_softmax_minus_onehot():
+    rng = np.random.default_rng(0)
+    B, C = 5, 7
+    x = Tensor(rng.standard_normal((B, C)), requires_grad=True, is_leaf=True)
+    tgt = rng.integers(0, C, size=(B,))
+
+    # forward/backward
+    loss = F.cross_entropy_loss(x, tgt, reduction="mean")
+    loss.backward()
+
+    # expected grad: (softmax - onehot)/B
+    s = F.softmax(x).numpy()
+    oh = np.zeros((B, C)); oh[np.arange(B), tgt] = 1.0
+    expected = (s - oh) / B
+    assert np.allclose(x.grad, expected, rtol=1e-6, atol=1e-6)
+
+
 
 def my_func():
     t1 = Tensor(np.random.randn(3, 3), requires_grad=True, is_leaf=True)
@@ -414,6 +432,14 @@ def my_func():
     print(f"[FUN @ tests/tensor_tests.py] out2:\n{out2}")
     print("---"*5)
     print(f"[FUN @ tests/tensor_tests.py] final:\n{final}")
+    print("---"*5)
+
+    rng = np.random.default_rng(0)
+    B, C = 5, 7
+    x = Tensor(rng.standard_normal((B, C)), requires_grad=True, is_leaf=True)
+    tgt = rng.integers(0, C, size=(B,))
+    print(f"[FUN @ tests/tensor_tests.py] tgt.shape: {tgt.shape}")
+    print(f"[FUN @ tests/tensor_tests.py] tgt:\n{tgt}")
     print("---"*5)
 
 if __name__ == "__main__":

@@ -68,54 +68,6 @@ class MatMul(Function):
         db = a.T @ grad_output
         return da, db
 
-class Sum(Function):
-    @staticmethod
-    def forward(ctx: Context, a, axis=None, keepdims=False):
-        ctx.save_for_backward(a.shape, axis, keepdims)
-        return np.sum(a, axis=axis, keepdims=keepdims)
-
-    @staticmethod
-    def backward(ctx: Context, grad_output: np.ndarray):
-        shape, axis, keepdims = ctx.saved_tensors
-        if not keepdims and axis is not None:
-            # need to reshape grad_output to have singleton dims for broadcast
-            if isinstance(axis, int):
-                axis_t = (axis,)
-            else:
-                axis_t = tuple(axis)
-            #new_shape = list(grad_output.shape)  # DEBUG
-            # build target shape
-            shape_with_keep = list(shape)
-            for ax in sorted(axis_t):
-                shape_with_keep[ax] = 1
-            reshaped = grad_output.reshape(shape_with_keep)
-            return np.ones(shape) * reshaped
-        else:
-            return np.ones(shape) * grad_output
-
-class Mean(Function):
-    @staticmethod
-    def forward(ctx: Context, a, dim=None, keepdims=False):
-        ctx.save_for_backward(a.shape, dim, keepdims)
-        return np.mean(a, axis=dim, keepdims=keepdims)
-
-    @staticmethod
-    def backward(ctx: Context, grad_output: np.ndarray):
-        shape, dim, keepdims = ctx.saved_tensors
-        denom = np.prod([shape[i] for i in range(len(shape))]) if dim is None else np.prod([shape[i] for i in (dim if isinstance(dim, tuple) else (dim,))])
-        if not keepdims and dim is not None:
-            if isinstance(dim, int):
-                dim = (dim,)
-            else:
-                dim = tuple(dim)
-            shape_with_keep = list(shape)
-            for ax in sorted(dim):
-                shape_with_keep[ax] = 1
-            reshaped = grad_output.reshape(shape_with_keep)
-            return np.ones(shape) * reshaped / denom
-        else:
-            return np.ones(shape) * grad_output / denom
-
 class Transpose(Function):
     @staticmethod
     def forward(ctx: Context, a):
@@ -163,32 +115,81 @@ class Pow(Function):
         return grad_output * exponent * (a ** (exponent - 1))
     
 class VariableSum(Function):
+    ###
+    # Used chatgpt to fix bugs in this code, leading to issues with ce-loss
+    ###
     @staticmethod
-    def forward(ctx: Context, a: np.ndarray, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False):
+    def forward(ctx, a, dim=None, keepdims=False):
         """
         Args:
             a: np.ndarray
             dim: int or tuple of ints or None
             keepdims: if True, result shape matches 'a' in rank (PyTorch-style)
         """
-        ctx.save_for_backward(a.shape, dim, keepdims)
-        return np.sum(a, axis=dim, keepdims=keepdims)
-
-    @staticmethod
-    def backward(ctx: Context, grad_output: np.ndarray):
-        shape, dim, keepdims = ctx.saved_tensors
-
-        # Grad of sum is just ones, broadcasted to input shape
-        if not keepdims and dim is not None:
-            # reshape grad_output so it can broadcast back to original shape
+        # Normalize dim to a sorted tuple of positive axes or None
+        if dim is None:
+            norm_dim = None
+        else:
             if isinstance(dim, int):
                 dim = (dim,)
-            grad_output = np.reshape(grad_output, [
-                grad_output.shape[i] if i in dim else 1
-                for i in range(len(shape) - (0 if keepdims else len(dim)))
-            ])
+            nd = a.ndim
+            norm_dim = tuple(sorted(d if d >= 0 else d + nd for d in dim))
+        ctx.save_for_backward(a.shape, norm_dim, keepdims)
+        return np.sum(a, axis=norm_dim, keepdims=keepdims)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        shape, dim, keepdims = ctx.saved_tensors
+
+        # Sum over all elements
+        if dim is None:
+            # grad_output shape is () if keepdims=False, or shape of ones if keepdims=True
+            return np.ones(shape, dtype=grad_output.dtype) * grad_output
+
+        # We reduced some axes. If keepdims=False, reinsert singleton dims at reduced positions
+        if not keepdims:
+            shp = list(shape)
+            for d in dim:
+                shp[d] = 1
+            grad_output = grad_output.reshape(shp)  # now broadcastable to 'shape'
 
         return np.ones(shape, dtype=grad_output.dtype) * grad_output
+
+class Mean(Function):
+    ###
+    # Used chatgpt to fix bugs in this code, leading to issues with ce-loss
+    ###
+    @staticmethod
+    def forward(ctx, a, dim=None, keepdims=False):
+        if dim is None:
+            norm_dim = None
+            denom = a.size
+        else:
+            if isinstance(dim, int):
+                dim = (dim,)
+            nd = a.ndim
+            norm_dim = tuple(sorted(d if d >= 0 else d + nd for d in dim))
+            denom = 1
+            for d in norm_dim:
+                denom *= a.shape[d]
+        ctx.save_for_backward(a.shape, norm_dim, keepdims, denom)
+        return np.mean(a, axis=norm_dim, keepdims=keepdims)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        shape, dim, keepdims, denom = ctx.saved_tensors
+
+        if dim is None:
+            # grad_output is scalar if keepdims=False
+            return (np.ones(shape, dtype=grad_output.dtype) * grad_output) / denom
+
+        if not keepdims:
+            shp = list(shape)
+            for d in dim:
+                shp[d] = 1
+            grad_output = grad_output.reshape(shp)
+
+        return (np.ones(shape, dtype=grad_output.dtype) * grad_output) / denom
 
 class Exp(Function):
     @staticmethod

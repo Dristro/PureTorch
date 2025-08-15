@@ -38,4 +38,13 @@ class Tensor(Variable):
         return self.data
         
     def __repr__(self):
-        return f"tensor({self.data}, requires_grad={self.requires_grad}, device={self.device}, dtype={self.dtype})"
+        #return f"tensor({self.data}, requires_grad={self.requires_grad}, device={self.device}, dtype={self.dtype})"
+        formatted_data = np.array2string(
+            self.data,
+            precision=4,
+            suppress_small=True,
+            separator=', ',
+            prefix=' ' * 7
+        )
+        statement = f"tensor({formatted_data}, requires_grad={self.requires_grad})" if self.requires_grad else f"tensor({formatted_data})"
+        return statement

@@ -269,6 +269,9 @@ class Variable:
             self._data[key] = value
         self._bump_version()
 
+    def squeeze(self, dim: Optional[int] = None):
+        self.data.squeeze(axis=dim)
+
 
     # tensor functions
     def reshape(self, shape: tuple):
@@ -357,12 +360,14 @@ def _wrap_forward(fn_cls: type, *parents, result_cls=None,  **kwargs) -> Variabl
 
     # Create output as tensor
     if result_cls.__name__ == "Tensor":
+        devices = [p.device for p in parents if hasattr(p, "device")]  # FIXED: device issue if parent is mixed (variable/tensor)
         out = result_cls(
             data=out_data,
             requires_grad=any(p.requires_grad for p in parents),
             grad_fn=None,
             is_leaf=False,
-            device=parents[0].device
+            device=devices[-1],  # get last device from parents
+                                 # FIX-NEEDED: give priority to a device (or) check if all parents are on same device
         )
     
     # Create output as variable

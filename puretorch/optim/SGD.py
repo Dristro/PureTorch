@@ -1,11 +1,15 @@
-from .optimizer import Optimizer
 from typing import List
+import puretorch
+from .optimizer import Optimizer
 
 
 class SGD(Optimizer):
-    def __init__(self, params: list,
-                 lr: float = 1e-3,
-                 momentum: float = 0.9):
+    def __init__(
+            self,
+            params: list[puretorch.Tensor],
+            lr: float = 1e-3,
+            momentum: float = 0.9
+        ):
         """
         Initialize the SGD optimizer for given parameters.
         Args:
@@ -31,4 +35,4 @@ class SGD(Optimizer):
         for group in self.param_groups:
             for param in group["params"]:
                 if param.grad is not None: # ensure param has a grad
-                    param.data -= self.lr * param.grad
+                    param._data -= self.lr * param.grad
