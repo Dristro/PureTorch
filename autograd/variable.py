@@ -1,6 +1,12 @@
 import weakref
 import numpy as np
-from typing import Union, Optional, Callable, Tuple
+from typing import (
+    List,
+    Union,
+    Tuple,
+    Callable,
+    Optional,
+)
 
 from .context import Context
 from .function import Function
@@ -11,15 +17,15 @@ from .ops import (
     Sub,
     Div,
     Neg,
-    MatMul,
-    Mean,
-    Transpose,
-    Reshape,
-    ReLU,
     Pow,
-    VariableSum,
     Exp,
     Log,
+    ReLU,
+    Mean,
+    MatMul,
+    Reshape,
+    Transpose,
+    VariableSum,
 )
 
 class Variable:
@@ -49,10 +55,10 @@ class Variable:
     def zero_grad(self):
         self.grad = None
     
-    def detach(self):
+    def detach(self) -> "Variable":
         return Variable(self._data.copy(), requires_grad=False, grad_fn=None, is_leaf=True)
 
-    def requires_grad_(self, val=True):
+    def requires_grad_(self, val=True) -> "Variable":
         self.requires_grad = val
         return self
     
@@ -70,20 +76,24 @@ class Variable:
         self._bump_version()
 
     @property
-    def shape(self):
+    def shape(self) -> Tuple:
         return self._shape
     
     @property
-    def ndim(self):
+    def ndim(self) -> int:
         return self._ndim
     
     @property
-    def dtype(self):
+    def dtype(self) -> np.dtype:
         return self._dtype
     
-    def numpy(self):
+    def numpy(self) -> np.ndarray:
         """convert into numpy.ndarray"""
         return self._data
+    
+    def tolist(self) -> List:
+        """convert into python-list"""
+        return list(self._data)
 
     def backward(self, gradient: Optional[np.ndarray] = None):
         r"""
@@ -178,43 +188,43 @@ class Variable:
         self._backward_hooks.append(fn)
 
     # math operators
-    def __add__(self, other):
+    def __add__(self, other) -> "Variable":
         return add(self, other)
 
-    def __radd__(self, other):
+    def __radd__(self, other) -> "Variable":
         return add(other, self)
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> "Variable":
         return mul(self, other)
 
-    def __rmul__(self, other):
+    def __rmul__(self, other) -> "Variable":
         return mul(other, self)
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> "Variable":
         return sub(self, other)
 
-    def __rsub__(self, other):
+    def __rsub__(self, other) -> "Variable":
         return sub(other, self)
 
-    def __truediv__(self, other):
+    def __truediv__(self, other) -> "Variable":
         return div(self, other)
 
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other) -> "Variable":
         return div(other, self)
 
-    def __neg__(self):
+    def __neg__(self) -> "Variable":
         return neg(self)
 
-    def __matmul__(self, other):
+    def __matmul__(self, other) -> "Variable":
         return matmul(self, other)
     
-    def __pow__(self, exp: Union[int, float]):
+    def __pow__(self, exp: Union[int, float]) -> "Variable":
         return pow(self, exp)
 
     
     # inplace operators
     
-    def __iadd__(self, other):
+    def __iadd__(self, other) -> "Variable":
         self._check_inplace_ok()
         if isinstance(other, Variable):
             np.add(self._data, other._data, out=self._data, casting="unsafe")
@@ -223,7 +233,7 @@ class Variable:
         self._bump_version()
         return self
 
-    def __isub__(self, other):
+    def __isub__(self, other) -> "Variable":
         self._check_inplace_ok()
         if isinstance(other, Variable):
             np.subtract(self._data, other._data, out=self._data, casting="unsafe")
@@ -232,7 +242,7 @@ class Variable:
         self._bump_version()
         return self
 
-    def __imul__(self, other):
+    def __imul__(self, other) -> "Variable":
         self._check_inplace_ok()
         if isinstance(other, Variable):
             np.multiply(self._data, other._data, out=self._data, casting="unsafe")
@@ -241,7 +251,7 @@ class Variable:
         self._bump_version()
         return self
 
-    def __itruediv__(self, other):
+    def __itruediv__(self, other) -> "Variable":
         self._check_inplace_ok()
         if isinstance(other, Variable):
             np.true_divide(self._data, other._data, out=self._data, casting="unsafe")
@@ -250,7 +260,7 @@ class Variable:
         self._bump_version()
         return self
 
-    def __ipow__(self, other):
+    def __ipow__(self, other) -> "Variable":
         self._check_inplace_ok()
         if isinstance(other, Variable):
             np.power(self._data, other._data, out=self._data, casting="unsafe")
@@ -269,28 +279,34 @@ class Variable:
             self._data[key] = value
         self._bump_version()
 
-    def squeeze(self, dim: Optional[int] = None):
-        self.data.squeeze(axis=dim)
+    def squeeze(self, dim: Optional[int] = None, in_place: bool = True)  -> Union["Variable", None]:
+        """
+        removes dims with no entries
+        Args:
+            dim: dimention to squeeze (if none, all dims that can be squeezed will be squeezed)
+            in_place: returns new instace (squeezed) if False, modifies current instance if True
+        """
+        return self.data.squeeze(axis=dim) if not in_place else self._data.squeeze(axis=dim)
 
 
     # tensor functions
-    def reshape(self, shape: tuple):
+    def reshape(self, shape: tuple) -> "Variable":
         return reshape(self, shape=shape)
 
     @property
-    def T(self):
+    def T(self) -> "Variable":
         return transpose(self)
     
-    def sum(self, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False):
+    def sum(self, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False) -> "Variable":
         return tensor_sum(a=self, dim=dim, keepdims=keepdims)
     
-    def mean(self, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False):
+    def mean(self, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False) -> "Variable":
         return mean(a=self, dim=dim, keepdims=keepdims)
     
-    def exp(self):
+    def exp(self) -> "Variable":
         return exp(a=self)
     
-    def log(self):
+    def log(self) -> "Variable":
         return log(a=self)
 
     def add_(self, other):

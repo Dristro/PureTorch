@@ -36,6 +36,12 @@ class Tensor(Variable):
     @property
     def item(self):
         return self.data
+    
+    def item(self):  # another way to get item
+        return self.data
+    
+    def __getitem__(self, idx: int):
+        return self._data[idx]
         
     def __repr__(self):
         #return f"tensor({self.data}, requires_grad={self.requires_grad}, device={self.device}, dtype={self.dtype})"
