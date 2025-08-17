@@ -2,9 +2,9 @@ import numpy as np
 from typing import Tuple
 from ..tensor import Tensor
 
-def tensor(shape: Tuple, **kwargs) -> Tensor:
+def tensor(*shape, **kwargs) -> Tensor:
     """Creates Tensor of given shape."""
-    return Tensor(np.random.randn(shape), **kwargs)
+    return Tensor(np.random.randn(*shape), **kwargs)
 
 def zeros_like(a: Tensor) -> Tensor:
     """

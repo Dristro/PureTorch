@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: puretorch
+Version: 1.1.0.dev0
+Summary: Custom implementation of a Neural Network library using numpy. Now supporting autograd.
+Home-page: https://github.com/Dristro/PureTorch
+Author: Dhruv
+Requires-Python: >=3.11
+License-File: LICENSE
+Requires-Dist: numpy<3.0,>=2.0.0
+Requires-Dist: graphviz<1.0,>=0.20.0
+Dynamic: author
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

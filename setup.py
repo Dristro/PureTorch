@@ -1,14 +1,16 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = "PureTorch",
-    version = "v1.1.0+dev",
+    name = "puretorch",
+    version = "1.1.0.dev",
     author = "Dhruv",
-    description = "Custom implementation of a Neural Network library using numpy. Now supports autograd.",
-    url = "https://github.com/Dristro/PureTorch.git",
-    packages = find_packages(),
+    description = "Custom implementation of a Neural Network library using numpy. Now supporting autograd.",
+    url = "https://github.com/Dristro/PureTorch",
     install_requires = [
-        "numpy>=1.26.0",
+        "numpy>=2.0.0,<3.0",
+        "graphviz>=0.20.0,<1.0"
     ],
-    python_requires = ">=3.8",
+    packages = find_packages(),
+    python_requires = ">=3.11",  # for new typing related stuff
+    include_package_data=True,
 )

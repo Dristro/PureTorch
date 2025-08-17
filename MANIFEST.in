@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+
+graft puretorch
+graft autograd
+
+global-exclude *.pyc __pycache__ *.pyo *.pyd
