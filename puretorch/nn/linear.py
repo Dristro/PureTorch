@@ -1,7 +1,7 @@
 import numpy as np
-from puretorch import Tensor
+from puretorch import Tensor, nn
 
-class Linear():
+class Linear(nn.Module):
     def __init__(self,
                  in_features: int,
                  out_features: int,
@@ -18,6 +18,7 @@ class Linear():
         Returns:
             None
         """
+        super().__init__()
         self.in_features = in_features
         self.out_features = out_features
 
@@ -27,7 +28,8 @@ class Linear():
         epsilon = 1e-8
         if weights_norm != 0:
             weights_data /= (weights_norm + epsilon)
-        self.weights = Tensor(weights_data, requires_grad=True)
+        #self.weights = Tensor(weights_data, requires_grad=True)
+        self.weights = nn.Parameter(weights_data, requires_grad=True)
 
         # Bias (normalized, -1 to 1)
         if bias:
@@ -35,7 +37,8 @@ class Linear():
             bias_norm = np.linalg.norm(bias_data)
             if bias_norm != 0:
                 bias_data /= (bias_norm + epsilon)
-            self.bias = Tensor(bias_data, requires_grad=True)
+            #self.bias = Tensor(bias_data, requires_grad=True)
+            self.bias = nn.Parameter(bias_data, requires_grad=True)
         else:
             self.bias = None
 
@@ -59,10 +62,10 @@ class Linear():
             out = out + self.bias
         return out
 
-    def parameters(self):
-        yield self.weights
-        if self.bias is not None:
-            yield self.bias
+    #def parameters(self):
+    #    yield self.weights
+    #    if self.bias is not None:
+    #        yield self.bias
 
-    def __call__(self, x):
-        return self.forward(x)
+    #def __call__(self, x):
+    #    return self.forward(x)

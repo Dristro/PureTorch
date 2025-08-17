@@ -1,8 +1,8 @@
-from puretorch import Tensor
+from puretorch import Tensor, nn
 
-class Sequential:
+class Sequential(nn.Module):
     def __init__(self,
-                 *layers,
+                 *modules: nn.Module,
                  name: str = "Sequential model"):
         """
         Creates a new Sequential instance with the given layers.
@@ -14,8 +14,11 @@ class Sequential:
         Returns:
             None, creates a model instance
         """
-        self.layers = layers
-        self.name = name
+        super().__init__()
+        for i,m in enumerate(modules):
+            self.add_module(f"{str(m.__class__)}{str(i)}", m)
+        #self.layers = layers
+        #self.name = name
 
     def forward(self, x: Tensor) -> Tensor:
         """
@@ -26,34 +29,27 @@ class Sequential:
         Returns:
             A Tensor with the output of the model on the input Tensor (x).
         """
-        for layer in self.layers:
-            x = layer.forward(x)
+        for m in self.children():
+            x = m(x)
         return x
+        #for layer in self.layers:
+        #    x = layer.forward(x)
+        #return x
 
-    def parameters(self):
-        """
-        Runs through each layer in the Sequential instance and gets the parameters from each layer and returns a list
-        with the parameters of the model.
+    #def parameters(self):
+    #    """
+    #    Runs through each layer in the Sequential instance and gets the parameters from each layer and returns a list
+    #    with the parameters of the model.
+    #
+    #    NOTE: if you are using custom layers, you need to add your own `.parameters()` function to your layer. Make
+    #    sure to return a list of parameters Returns: A list of the parameters of the model.
+    #    """
+    #    parameters = []
+    #    for layer in self.layers:
+    #        yield from layer.parameters()
 
-        NOTE: if you are using custom layers, you need to add your own `.parameters()` function to your layer. Make
-        sure to return a list of parameters Returns: A list of the parameters of the model.
-        """
-        parameters = []
-        for layer in self.layers:
-            yield from layer.parameters()
-
-    def summary(self):
-        """
-        Prints the model's layer name along with the total parameter count.
-        """
-        print(f"Model: {self.name}\n")
-        print(f"Layer name\t| Num params")
-        print(f"---------------\t| ---------")
-        sum = 0
-        for layer in self.layers:
-            print(f"{layer.__class__.__name__}\t\t| {len(layer.parameters())}")
-            sum += len(layer.parameters())
-        print(f"Total params: {sum}")
-
-    def __call__(self, x):
-        return self.forward(x)
+    #def __call__(self, x):
+    #    return self.forward(x)
+    
+    def __repr__(self):
+        return f"[INFO] add this later, not that important"
