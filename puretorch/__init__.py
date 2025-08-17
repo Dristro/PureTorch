@@ -13,7 +13,7 @@ from puretorch.utils.tensor_utils import (
 )
 from puretorch.utils.viz import make_dot
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 __all__ = [
     "Tensor",
