@@ -101,7 +101,7 @@ this for setting-up the "dev" branch locally.\
 ### Installation Steps
 1. **Install the development branch:**
 ```bash
-pip install "git+https://github.com/Dristro/PureTorch@dev"
+pip install PureTorch
 ```
 2. **Verify installation in Python**
 ```Python
@@ -113,7 +113,7 @@ print(puretorch.__version__)
 python3 -c "import puretorch; print(puretorch.__version__)"
 ```
 
-If the version indicated is: **1.1.0+dev**, then the package was installed correctly.\
+If the version indicated is: **1.1.0**, then the package was installed correctly.\
 If not, try reinstalling the package (or) check if you installed the stable (vs) development package.
 
 ---
