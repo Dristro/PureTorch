@@ -3,4 +3,5 @@ dev_notebooks
 .DS_Store
 __pycache__/
 **/*.pdf
+puretorch.egg-info/
 
