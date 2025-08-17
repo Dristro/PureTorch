@@ -7,11 +7,11 @@ import math
 import pytest
 import numpy as np
 
-from utils import make_dot
-
 import puretorch
+
 from puretorch import Tensor
-import puretorch.nn.functional as F
+from puretorch import make_dot
+from puretorch.nn import functional as F
 
 
 # same tests as tests/autograd_tests.py

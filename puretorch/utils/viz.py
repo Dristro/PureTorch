@@ -27,8 +27,13 @@ def make_dot(
     edge_attr=None,
 ):
     """
-    output_tensor: the final Tensor (e.g., `out`) you called backward on.
-    params: optional dict {name: tensor} to highlight parameters.
+    **Experimental**, this function is likely to change in later updates.
+    
+    Draws trace for output_tensor.
+
+    Args:
+        output_tensor: the final Tensor (e.g., `out`) you called backward on.
+        params: optional dict {name: tensor} to highlight parameters.
     """
     params = params or {}
     name_for_tensor = {id(v): k for k, v in params.items()}

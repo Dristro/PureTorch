@@ -11,6 +11,7 @@ from puretorch.utils.tensor_utils import (
     zeros_like,
     linspace,
 )
+from puretorch.utils.viz import make_dot
 
 __version__ = "v1.1.0+dev"
 
@@ -27,4 +28,5 @@ __all__ = [
     "equal",
     "zeros_like",
     "linspace",
+    "make_dot",
 ]
