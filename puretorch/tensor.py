@@ -40,6 +40,9 @@ class Tensor(Variable):
     def item(self):  # another way to get item
         return self.data
     
+    def relu(self) -> "Tensor":
+        return self._relu()
+
     def __getitem__(self, idx: int):
         return self._data[idx]
         

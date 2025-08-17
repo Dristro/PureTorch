@@ -1,8 +1,22 @@
 import numpy as np
-from typing import Union, Literal, Optional, List
+from typing import (
+    List,
+    Union,
+    Literal,
+    Optional,
+)
 
 from puretorch import Tensor
 from .utils import _as_cls_const, _broadcast_class_weight
+
+# activations
+def relu(x: Tensor) -> Tensor:
+    return x.relu()
+
+def tanh(x: Tensor) -> Tensor:
+    pos = x.exp()
+    neg = x.__neg__().exp()
+    return (pos - neg) / (pos + neg)
 
 def softmax(logits: Tensor, dim: int = -1) -> Tensor:
     # Numerically stable softmax: subtract per-row max
@@ -17,6 +31,7 @@ def log_softmax(logits: Tensor, dim: int = -1) -> Tensor:
     return softmax(logits, dim=dim).log()
 
 
+# losses
 def cross_entropy(
     logits: Tensor,
     targets: Union[np.ndarray, Tensor],

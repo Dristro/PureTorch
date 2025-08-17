@@ -1,6 +1,7 @@
 import weakref
 import numpy as np
 from typing import (
+    Self,
     List,
     Union,
     Tuple,
@@ -55,11 +56,13 @@ class Variable:
     def zero_grad(self):
         self.grad = None
     
-    def detach(self) -> "Variable":
+    def detach(self) -> Self:
+        return type(self)(self._data.copy(), requires_grad=False, grad_fn=None, is_leaf=True)
         return Variable(self._data.copy(), requires_grad=False, grad_fn=None, is_leaf=True)
 
-    def requires_grad_(self, val=True) -> "Variable":
+    def requires_grad_(self, val=True) -> Self:
         self.requires_grad = val
+        return type(self)(self)
         return self
     
     @property
@@ -188,85 +191,119 @@ class Variable:
         self._backward_hooks.append(fn)
 
     # math operators
-    def __add__(self, other) -> "Variable":
+    def __add__(self, other) -> Self:
         return add(self, other)
 
-    def __radd__(self, other) -> "Variable":
+    def __radd__(self, other) -> Self:
         return add(other, self)
 
-    def __mul__(self, other) -> "Variable":
+    def __mul__(self, other) -> Self:
         return mul(self, other)
 
-    def __rmul__(self, other) -> "Variable":
+    def __rmul__(self, other) -> Self:
         return mul(other, self)
 
-    def __sub__(self, other) -> "Variable":
+    def __sub__(self, other) -> Self:
         return sub(self, other)
 
-    def __rsub__(self, other) -> "Variable":
+    def __rsub__(self, other) -> Self:
         return sub(other, self)
 
-    def __truediv__(self, other) -> "Variable":
+    def __truediv__(self, other) -> Self:
         return div(self, other)
 
-    def __rtruediv__(self, other) -> "Variable":
+    def __rtruediv__(self, other) -> Self:
         return div(other, self)
 
-    def __neg__(self) -> "Variable":
+    def __neg__(self) -> Self:
         return neg(self)
 
-    def __matmul__(self, other) -> "Variable":
+    def __matmul__(self, other) -> Self:
         return matmul(self, other)
     
-    def __pow__(self, exp: Union[int, float]) -> "Variable":
+    def __pow__(self, exp: Union[int, float]) -> Self:
         return pow(self, exp)
 
+
+    # variable comparisons
+    def _coerce_other(self, other):
+        """Helper to extract data from Variable or plain number/array."""
+        if isinstance(other, Variable):  # works for subclasses too
+            return other.data
+        elif isinstance(other, (int, float, np.ndarray, list)):
+            return other
+        else:
+            return NotImplementedError(f"other must be either: (int, float, np.ndarray, list), got: {type(other)}")
+    def __eq__(self, other) -> bool:
+        other = self._coerce_other(other)
+        return np.equal(self.data, other)
+    
+    def __lt__(self, other):
+        other = self._coerce_other(other)
+        return np.less(self.data, other)
+    
+    def __gt__(self, other):
+        other = self._coerce_other(other)
+        return np.greater(self.data, other)
+    
+    def __le__(self, other):
+        other = self._coerce_other(other)
+        return np.less_equal(self.data, other)
+    
+    def __ge__(self, other):
+        other = self._coerce_other(other)
+        return np.greater_equal(self.data, other)
     
     # inplace operators
-    
-    def __iadd__(self, other) -> "Variable":
+
+    def __iadd__(self, other) -> Self:
         self._check_inplace_ok()
         if isinstance(other, Variable):
             np.add(self._data, other._data, out=self._data, casting="unsafe")
         else:
             np.add(self._data, other, out=self._data, casting="unsafe")
         self._bump_version()
+        return type(self)(self)
         return self
 
-    def __isub__(self, other) -> "Variable":
+    def __isub__(self, other) -> Self:
         self._check_inplace_ok()
         if isinstance(other, Variable):
             np.subtract(self._data, other._data, out=self._data, casting="unsafe")
         else:
             np.subtract(self._data, other, out=self._data, casting="unsafe")
         self._bump_version()
+        return type(self)(self)
         return self
 
-    def __imul__(self, other) -> "Variable":
+    def __imul__(self, other) -> Self:
         self._check_inplace_ok()
         if isinstance(other, Variable):
             np.multiply(self._data, other._data, out=self._data, casting="unsafe")
         else:
             np.multiply(self._data, other, out=self._data, casting="unsafe")
         self._bump_version()
+        return type(self)(self)
         return self
 
-    def __itruediv__(self, other) -> "Variable":
+    def __itruediv__(self, other) -> Self:
         self._check_inplace_ok()
         if isinstance(other, Variable):
             np.true_divide(self._data, other._data, out=self._data, casting="unsafe")
         else:
             np.true_divide(self._data, other, out=self._data, casting="unsafe")
         self._bump_version()
+        return type(self)(self)
         return self
 
-    def __ipow__(self, other) -> "Variable":
+    def __ipow__(self, other) -> Self:
         self._check_inplace_ok()
         if isinstance(other, Variable):
             np.power(self._data, other._data, out=self._data, casting="unsafe")
         else:
             np.power(self._data, other, out=self._data, casting="unsafe")
         self._bump_version()
+        return type(self)(self)
         return self
 
     # data logic
@@ -279,35 +316,39 @@ class Variable:
             self._data[key] = value
         self._bump_version()
 
-    def squeeze(self, dim: Optional[int] = None, in_place: bool = True)  -> Union["Variable", None]:
+    def squeeze(self, dim: Optional[int] = None, in_place: bool = True)  -> Union[Self, None]:
         """
         removes dims with no entries
         Args:
             dim: dimention to squeeze (if none, all dims that can be squeezed will be squeezed)
             in_place: returns new instace (squeezed) if False, modifies current instance if True
         """
+        return type(self)(self.data.squeeze(axis=dim) if not in_place else self._data.squeeze(axis=dim))
         return self.data.squeeze(axis=dim) if not in_place else self._data.squeeze(axis=dim)
 
 
     # tensor functions
-    def reshape(self, shape: tuple) -> "Variable":
+    def reshape(self, shape: tuple) -> Self:
         return reshape(self, shape=shape)
 
     @property
-    def T(self) -> "Variable":
+    def T(self) -> Self:
         return transpose(self)
     
-    def sum(self, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False) -> "Variable":
+    def sum(self, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False) -> Self:
         return tensor_sum(a=self, dim=dim, keepdims=keepdims)
     
-    def mean(self, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False) -> "Variable":
+    def mean(self, dim: Optional[Union[int, tuple]] = None, keepdims: bool = False) -> Self:
         return mean(a=self, dim=dim, keepdims=keepdims)
     
-    def exp(self) -> "Variable":
+    def exp(self) -> Self:
         return exp(a=self)
     
-    def log(self) -> "Variable":
+    def log(self) -> Self:
         return log(a=self)
+
+    def _relu(self) -> Self:  # priv, will be used in Tensor (not needed for variable)
+        return relu(a=self)
 
     def add_(self, other):
         self._check_inplace_ok()

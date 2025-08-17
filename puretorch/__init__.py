@@ -3,23 +3,28 @@ from puretorch import nn
 from puretorch import optim
 from autograd import no_grad, enable_grad
 from puretorch.nn import functional
-from puretorch.nn.functional import (
-    cross_entropy,
-    softmax,
-    log_softmax,
+from puretorch.utils.tensor_utils import (
+    tensor,
+    allclose,
+    all,
+    equal,
+    zeros_like,
+    linspace,
 )
-
 
 __version__ = "v1.1.0+dev"
 
 __all__ = [
+    "Tensor",
     "nn",
     "optim",
-    "Tensor",
     "no_grad",
-    "softmax",
-    "functional",
     "enable_grad",
-    "log_softmax",
-    "cross_entropy",
+    "functional",
+    "tensor",
+    "allclose",
+    "all",
+    "equal",
+    "zeros_like",
+    "linspace",
 ]

@@ -3,6 +3,7 @@ import os
 import sys
 sys.path.append(os.getcwd())
 
+import math
 import pytest
 import numpy as np
 
@@ -406,7 +407,7 @@ def test_cross_entropy_grad_matches_softmax_minus_onehot():
     tgt = rng.integers(0, C, size=(B,))
 
     # forward/backward
-    loss = F.cross_entropy_loss(x, tgt, reduction="mean")
+    loss = F.cross_entropy(x, tgt, reduction="mean")
     loss.backward()
 
     # expected grad: (softmax - onehot)/B
@@ -415,6 +416,59 @@ def test_cross_entropy_grad_matches_softmax_minus_onehot():
     expected = (s - oh) / B
     assert np.allclose(x.grad, expected, rtol=1e-6, atol=1e-6)
 
+
+def test_relu_positive_values():
+    x = Tensor([1.0, 2.5, 100.0])
+    y = F.relu(x)
+    expected = Tensor([1.0, 2.5, 100.0])
+    assert puretorch.equal(y, expected)
+
+
+def test_relu_negative_values():
+    x = Tensor([-1.0, -5.0, -0.001])
+    y = F.relu(x)
+    expected = puretorch.zeros_like(x)
+    assert puretorch.equal(y, expected)
+
+
+def test_relu_zero_boundary():
+    x = Tensor([0.0])
+    y = F.relu(x)
+    expected = Tensor([0.0])
+    assert puretorch.equal(y, expected)
+
+
+@pytest.mark.parametrize("val", [0.0, 1.0, -1.0, 2.5, -2.5])
+def test_tanh_scalar_against_math(val):
+    x = Tensor(val)
+    y = F.tanh(x).item()
+    expected = math.tanh(val)  # reference definition
+    assert math.isclose(y, expected, rel_tol=1e-6, abs_tol=1e-6)
+
+
+def test_tanh_symmetry():
+    # tanh is odd: tanh(-x) == -tanh(x)
+    x = puretorch.linspace(-3, 3, num=10)
+    y_pos = F.tanh(x)
+    y_neg = F.tanh(-x)
+    assert puretorch.allclose(y_neg, -y_pos, atol=1e-6)
+
+
+def test_tanh_range():
+    x = puretorch.linspace(-100, 100, num=50)
+    y = F.tanh(x)
+    # all outputs must be strictly between -1 and 1
+    #print(f"[DEBUG @ tests/tensor_tests.py] y: {y}")  # passed, remove in next commit
+    #print(f"[DEBUG @ tests/tensor_tests.py] y.shape: {y.shape}")
+    assert np.all(y >= -1.0)
+    assert np.all(y <= 1.0)
+
+
+def test_tanh_zero_boundary():
+    x = Tensor([0.0])
+    y = F.tanh(x)
+    expected = Tensor([0.0])
+    assert puretorch.allclose(y, expected, atol=1e-8)
 
 
 def my_func():
